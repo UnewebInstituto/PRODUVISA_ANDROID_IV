@@ -1,0 +1,31 @@
+Contenido del Curso de Android IV (Java)
+
+1.) Interacción con Servicios Web y APIs.
+1-1. Introducción a las APIs REST: Explicación de qué son las APIs REST y su importancia para las aplicaciones móviles.
+1-2. Llamadas de red con Retrofit: Uso de la librería "Retrofit" para hacer peticiones HTTP de forma eficiente y simplificada.
+1-3. Parsing de datos JSON:" Utilización de librerías como "Gson" para convertir objetos Java en JSON y viceversa.
+1-4. Autenticación y seguridad: Implementación de tokens de autenticación para comunicaciones seguras con el servidor.
+
+2.) Concurrencia e Hilos de Ejecución.
+2-1. Conceptos de hilos y procesos: Diferencia entre el hilo principal (UI Thread) y los hilos de trabajo.
+2-2. Manejo de tareas asíncronas: Uso de "AsyncTask" para realizar operaciones en segundo plano de manera segura.
+2-3. Programación con ExecutorService: Manejo avanzado de hilos con "ExecutorService" para gestionar un pool de hilos.
+2-4. Manejo de errores: Estrategias para capturar y manejar excepciones en hilos de trabajo.
+
+3.) Arquitectura y Patrones de Diseño.
+3.1 Introducción al patrón M.V.V.M.:  Explicación del patrón de diseño Model-View-ViewModel y su aplicación en Java.
+3.2 Componentes de la arquitectura de Android (AAC): Uso de "ViewModel" y "LiveData" para gestionar la UI y los datos de manera robusta y segura.
+3.3 Inyección de dependencias: Uso de librerías como "Dagger" o "Hilt" (en proyectos mixtos Kotlin/Java) para simplificar la gestión de dependencias.
+3.4 Patrones de repositorio: Implementación de la capa de repositorio para centralizar la lógica de acceso a datos.
+
+4.) Optimización y Rendimiento.
+4.1 Optimización de layouts: Técnicas para mejorar el rendimiento de la interfaz de usuario, como el uso de "ConstraintLayout".
+4.2 Carga eficiente de imágenes: Uso de librerías como "Glide" para manejar la carga y caché de imágenes de forma eficiente.
+4.3 Análisis de memoria: Uso de "Android Profiler" para detectar problemas de rendimiento y fugas de memoria.
+4.4 Pruebas de rendimiento: Medición y mejora de métricas clave como el tiempo de inicio de la aplicación y la fluidez de los "frames per second" (FPS).
+
+5.) Temas Avanzados.
+5.1 Notificaciones push:  Implementación de "Firebase Cloud Messaging (FCM)" para enviar notificaciones a los usuarios de la aplicación.
+5.2 Publicación en Google Play Store: Proceso de preparación del lanzamiento, firma de la aplicación (APK/AAB) y subida a la tienda.
+5.3 Monetización: Breve introducción a las opciones de monetización, como anuncios (AdMob) o compras dentro de la aplicación.
+5.4 Integración de Firebase: Uso de otras características de Firebase como "Analytics" y "Crashlytics".
