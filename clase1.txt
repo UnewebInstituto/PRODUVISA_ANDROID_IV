@@ -1,0 +1,6 @@
+HTTP
+https://es.wikipedia.org/wiki/Protocolo_de_transferencia_de_hipertexto
+
+JSON
+https://en.wikipedia.org/wiki/JSON
+

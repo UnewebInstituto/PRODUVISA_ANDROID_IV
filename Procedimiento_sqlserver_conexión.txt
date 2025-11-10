@@ -1,0 +1,107 @@
+Nombre de la base de datos será "emergencias", las tablas a considerar y sus atributos son:
+
+## 🧠 Parte 1: Instalación y configuración de SQL Server Express
+
+### 🔧 Instalación paso a paso
+1. **Descarga SQL Server Express** desde el sitio oficial de Microsoft.
+2. **Ejecuta el instalador** y selecciona "Basic" para una instalación rápida.
+3. **Instala SQL Server Management Studio (SSMS)** para administrar la base de datos.
+4. **Configura la autenticación**: usa "Mixed Mode" para permitir autenticación SQL y Windows.
+5. **Habilita TCP/IP** en el "SQL Server Configuration Manager" para permitir conexiones remotas.
+
+---
+
+## 🗄️ Parte 2: Creación de la base de datos y tablas
+
+### 📦 Script SQL para crear la base de datos y tablas
+
+```sql
+CREATE DATABASE emergencias;
+GO
+
+USE emergencias;
+GO
+
+CREATE TABLE Trabajadores (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    cedula VARCHAR(10),
+    nombres VARCHAR(255),
+    apellidos VARCHAR(255),
+    correo_electronico VARCHAR(255),
+    telefono VARCHAR(255)
+);
+
+CREATE TABLE Familiares (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    trabajador_id INT,
+    cedula VARCHAR(10),
+    nombres VARCHAR(255),
+    apellidos VARCHAR(255),
+    FOREIGN KEY (trabajador_id) REFERENCES Trabajadores(id)
+);
+
+CREATE TABLE Incidencias (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    trabajador_id INT,
+    familiar_id INT,
+    pregunta_1 BIT DEFAULT 0,
+    pregunta_2 BIT DEFAULT 0,
+    pregunta_3 BIT DEFAULT 0,
+    pregunta_4 BIT DEFAULT 0,
+    pregunta_5 BIT DEFAULT 0,
+    fecha_hora DATETIME,
+    FOREIGN KEY (trabajador_id) REFERENCES Trabajadores(id),
+    FOREIGN KEY (familiar_id) REFERENCES Familiares(id)
+);
+
+Server=localhost\SQLEXPRESS;Database=master;Trusted_Connection=True;
+
+--
+
+sqlcmd
+
+Efectuar la carga de datos de prueba para Trabajadores y Familiares.
+
+
+-- SSMS
+https://learn.microsoft.com/es-es/ssms/install/install?redirectedfrom=MSDN
+
+
+
+Para acceder a SQL Server Express localmente en tu PC después de instalarlo, sigue estos pasos:
+
+---
+
+## 🖥️ Acceso local a SQL Server Express
+
+### ✅ 1. Abrir SQL Server Management Studio (SSMS)
+- Si no lo tienes instalado, descárgalo desde [aquí](https://learn.microsoft.com/en-us/sql/ssms/download).
+- Ejecuta SSMS.
+
+### 🔌 2. Conectarse al servidor
+En la ventana de conexión:
+
+- **Servidor**: escribe `localhost\SQLEXPRESS` o `.\SQLEXPRESS`
+- **Autenticación**:
+  - Si elegiste autenticación de Windows durante la instalación, selecciona **Autenticación de Windows**
+  - Si configuraste un usuario `sa`, selecciona **Autenticación de SQL Server** e ingresa el usuario y contraseña
+
+### 🧭 3. Navegar por la base de datos
+Una vez conectado:
+- En el panel izquierdo (Explorador de objetos), expande **Bases de datos**
+- Haz clic derecho en **emergencias** (si ya la creaste) para ejecutar consultas, ver tablas, etc.
+
+---
+
+## 🛠️ Alternativa: Usar línea de comandos (sqlcmd)
+Si prefieres usar terminal:
+
+```bash
+sqlcmd -S localhost\SQLEXPRESS -E
+```
+
+- `-S`: nombre del servidor
+- `-E`: autenticación de Windows
+
+Una vez dentro, puedes ejecutar comandos SQL directamente.
+

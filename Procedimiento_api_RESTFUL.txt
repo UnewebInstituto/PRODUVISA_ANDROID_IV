@@ -1,0 +1,116 @@
+🛠️ Paso a paso: Desarrollo de servicio RESTful en VB.NET (ASP.NET Web API)
+
+1. 🧰 Preparar el entorno
+Instala Visual Studio 2022 o superior con el componente ASP.NET y desarrollo web.
+
+Asegúrate de tener SQL Server Express y SQL Server Management Studio (SSMS) instalados.
+
+2. 🆕 Crear el proyecto Web API
+Abre Visual Studio y selecciona Crear nuevo proyecto.
+
+Elige ASP.NET Web Application (.NET Framework).
+
+Nombra el proyecto (ej. EmergenciasAPI) y selecciona ubicación.
+
+En el asistente, selecciona Web API como plantilla.
+
+Asegúrate de que el lenguaje sea Visual Basic.
+
+3. 🔗 Configurar conexión a SQL Server
+En Web.config, agrega la cadena de conexión:
+
+xml
+
+Copiar
+<connectionStrings>
+  <add name="EmergenciasDB" 
+       connectionString="Server=localhost\SQLEXPRESS;Database=emergencias;Trusted_Connection=True;" 
+       providerName="System.Data.SqlClient" />
+</connectionStrings>
+
+4. 📦 Crear el controlador API
+En el proyecto, crea una carpeta llamada Controllers.
+Agrega un nuevo archivo: Web API Controller Class (VB).
+
+Nómbralo ValidarController.vb.
+
+5. 🧠 Escribir el servicio RESTful
+Aquí tienes un ejemplo básico para validar trabajador y obtener familiares:
+
+vbnet
+
+Copiar
+Imports System.Net
+Imports System.Web.Http
+Imports System.Data.SqlClient
+
+<RoutePrefix("api/validar")>
+Public Class ValidarController
+    Inherits ApiController
+
+    <HttpGet>
+    <Route("{cedula}")>
+    Public Function GetDatos(cedula As String) As IHttpActionResult
+        Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("EmergenciasDB").ConnectionString)
+            conn.Open()
+
+            ' Buscar trabajador
+            Dim cmdTrab As New SqlCommand("
+                SELECT id, cedula, nombres, apellidos, correo_electronico, telefono 
+                FROM Trabajadores WHERE cedula = @cedula", conn)
+            cmdTrab.Parameters.AddWithValue("@cedula", cedula)
+            Dim readerTrab = cmdTrab.ExecuteReader()
+
+            If Not readerTrab.HasRows Then
+                Return Content(HttpStatusCode.NotFound, "trabajador no registrado")
+            End If
+
+            readerTrab.Read()
+            Dim trabajadorId = readerTrab("id")
+            Dim trabajador = New With {
+                .id = trabajadorId,
+                .cedula = readerTrab("cedula"),
+                .nombres = readerTrab("nombres"),
+                .apellidos = readerTrab("apellidos"),
+                .correo_electronico = readerTrab("correo_electronico"),
+                .telefono = readerTrab("telefono")
+            }
+            readerTrab.Close()
+
+            ' Buscar familiares
+            Dim cmdFam As New SqlCommand("
+                SELECT id, cedula, nombres, apellidos 
+                FROM Familiares WHERE trabajador_id = @trabajadorId", conn)
+            cmdFam.Parameters.AddWithValue("@trabajadorId", trabajadorId)
+            Dim readerFam = cmdFam.ExecuteReader()
+            Dim familiares As New List(Of Object)
+
+            While readerFam.Read()
+                familiares.Add(New With {
+                    .id = readerFam("id"),
+                    .cedula = readerFam("cedula"),
+                    .nombres = readerFam("nombres"),
+                    .apellidos = readerFam("apellidos")
+                })
+            End While
+            readerFam.Close()
+
+            Return Ok(New With {
+                .trabajador = trabajador,
+                .familiares = familiares
+            })
+        End Using
+    End Function
+End Class
+
+6. 🚀 Probar el servicio
+Ejecuta el proyecto (F5).
+Usa Postman o tu navegador para probar:
+
+Código
+
+Copiar
+http://localhost:[puerto]/api/validar/V12345678
+
+7. 🌐 Habilitar acceso desde Android
+En el firewall de Windows, permite el puerto usado por IIS Express.
