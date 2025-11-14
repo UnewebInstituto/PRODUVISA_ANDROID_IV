@@ -1,0 +1,13 @@
+New Project
+Web
+ASP.NET MVC 4 Web Application
+Select template Web API
+
+
+<connectionStrings>
+    <add name="SqlConn"
+      connectionString="Data Source=SRVPDVPROD;Initial Catalog=emergencias;User ID=su;Password=artisan"
+      providerName="System.Data.SqlClient" />
+    </connectionStrings>
+
+

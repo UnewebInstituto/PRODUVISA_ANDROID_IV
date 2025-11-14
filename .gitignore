@@ -1,0 +1,10 @@
+# Archivos de Visual Studio que deben ser ignorados
+.vs/
+
+# Archivos generados por el build
+[Bb]in/
+[Oo]bj/
+
+# Otros archivos comunes
+*.suo
+*.user

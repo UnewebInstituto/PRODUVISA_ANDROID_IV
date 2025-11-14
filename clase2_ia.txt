@@ -1,0 +1,1543 @@
+Consulta realizada correctamente
+¡Hola! Asumo el rol de experto en Visual Studio y .NET. A continuación, te presento el procedimiento para crear un proyecto de API Web llamado ApiEmergencias en Visual Studio, utilizando el modelo de datos proporcionado, y exponiendo los endpoints solicitados.
+
+Utilizaremos ASP.NET Core Web API y Entity Framework Core (EF Core) para gestionar la base de datos emergencias.
+
+🏗️ 1. Configuración del Proyecto en Visual Studio
+El siguiente procedimiento es aplicable a versiones recientes de Visual Studio (como 2022).
+
+1.1. Crear el Proyecto
+Abre Visual Studio.
+
+Selecciona "Crear un proyecto nuevo".
+
+Busca y selecciona la plantilla "ASP.NET Core Web API" y haz clic en "Siguiente".
+
+Configura tu proyecto:
+
+Nombre del proyecto: ApiEmergencias
+
+Ubicación: Elige la carpeta deseada.
+
+Haz clic en "Siguiente".
+
+Información adicional:
+
+Marco de trabajo (Framework): Elige la versión más reciente de .NET (por ejemplo, .NET 8.0).
+
+Tipo de autenticación: Ninguno.
+
+Configurar para HTTPS: Marcado (recomendado).
+
+Habilitar OpenAPI (Soporte de Swagger/OpenAPI): Marcado (esto es crucial para probar los endpoints fácilmente).
+
+Haz clic en "Crear".
+
+1.2. Instalar Paquetes NuGet de Entity Framework Core
+Entity Framework Core es la capa ORM (Mapeo Objeto-Relacional) que nos permitirá interactuar con la base de datos SQL Server.
+
+En el Explorador de soluciones, haz clic derecho en el proyecto ApiEmergencias.
+
+Selecciona "Administrar paquetes NuGet...".
+
+En la pestaña "Examinar", instala los siguientes paquetes:
+
+Microsoft.EntityFrameworkCore.SqlServer (Para conectarse a SQL Server)
+
+Microsoft.EntityFrameworkCore.Design (Necesario para las migraciones)
+
+🧩 2. Implementación del Modelo de Datos (EF Core)
+Crearemos las clases C# que representan las tablas de la base de datos emergencias y el contexto de la base de datos.
+
+2.1. Crear las Clases Modelo (Carpeta Models)
+Crea una carpeta llamada Models y dentro de ella, los siguientes archivos:
+
+Trabajador.cs
+C#
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiEmergencias.Models
+{
+    public class Trabajador
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [MaxLength(10)]
+        public string Cedula { get; set; }
+        
+        [MaxLength(255)]
+        public string Nombres { get; set; }
+        
+        [MaxLength(255)]
+        public string Apellidos { get; set; }
+        
+        [MaxLength(255)]
+        public string CorreoElectronico { get; set; }
+        
+        [MaxLength(255)]
+        public string Telefono { get; set; }
+
+        // Relación con Familiares
+        public ICollection<Familiar> Familiares { get; set; }
+        // Relación con Incidencias
+        public ICollection<Incidencia> Incidencias { get; set; }
+    }
+}
+Familiar.cs
+C#
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiEmergencias.Models
+{
+    public class Familiar
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+        
+        // Clave Foránea a Trabajador
+        public int TrabajadorId { get; set; }
+        
+        [MaxLength(10)]
+        public string Cedula { get; set; }
+        
+        [MaxLength(255)]
+        public string Nombres { get; set; }
+        
+        [MaxLength(255)]
+        public string Apellidos { get; set; }
+
+        // Propiedad de Navegación
+        public Trabajador Trabajador { get; set; }
+    }
+}
+Incidencia.cs
+C#
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ApiEmergencias.Models
+{
+    public class Incidencia
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        // Claves Foráneas
+        public int TrabajadorId { get; set; }
+        public int? FamiliarId { get; set; } // Podría ser nulo si el trabajador reporta su propia emergencia
+
+        // Preguntas BIT (bool en C#)
+        public bool Pregunta1 { get; set; } = false;
+        public bool Pregunta2 { get; set; } = false;
+        public bool Pregunta3 { get; set; } = false;
+        public bool Pregunta4 { get; set; } = false;
+        public bool Pregunta5 { get; set; } = false;
+
+        public DateTime FechaHora { get; set; }
+
+        // Propiedades de Navegación
+        public Trabajador Trabajador { get; set; }
+        public Familiar Familiar { get; set; }
+    }
+}
+2.2. Crear el Contexto de Base de Datos (Carpeta Data)
+Crea una carpeta llamada Data y dentro de ella el archivo EmergenciasContext.cs.
+
+C#
+using ApiEmergencias.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace ApiEmergencias.Data
+{
+    public class EmergenciasContext : DbContext
+    {
+        public EmergenciasContext(DbContextOptions<EmergenciasContext> options)
+            : base(options)
+        {
+        }
+
+        public DbSet<Trabajador> Trabajadores { get; set; }
+        public DbSet<Familiar> Familiares { get; set; }
+        public DbSet<Incidencia> Incidencias { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Opcional: Configurar las claves foráneas con comportamiento CASCADE o NO ACTION si es necesario.
+            modelBuilder.Entity<Familiar>()
+                .HasOne(f => f.Trabajador)
+                .WithMany(t => t.Familiares)
+                .HasForeignKey(f => f.TrabajadorId)
+                .OnDelete(DeleteBehavior.Cascade); // Si se elimina un Trabajador, se eliminan sus Familiares.
+
+            modelBuilder.Entity<Incidencia>()
+                .HasOne(i => i.Trabajador)
+                .WithMany(t => t.Incidencias)
+                .HasForeignKey(i => i.TrabajadorId)
+                .OnDelete(DeleteBehavior.NoAction); // Evita eliminación accidental.
+
+            modelBuilder.Entity<Incidencia>()
+                .HasOne(i => i.Familiar)
+                .WithMany() // No tiene una propiedad de colección en Familiar.
+                .HasForeignKey(i => i.FamiliarId)
+                .OnDelete(DeleteBehavior.NoAction);
+        }
+    }
+}
+2.3. Configurar la Cadena de Conexión
+Abre el archivo appsettings.json.
+
+Agrega la sección ConnectionStrings. La cadena de conexión debe ser similar a la que se sugiere en el archivo anexo: Server=localhost\SQLEXPRESS;Database=master;Trusted_Connection=True;  (cambiando master por el nombre de la base de datos emergencias y añadiendo el manejo de autenticación).
+
+JSON
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "EmergenciasDB": "Server=localhost\\SQLEXPRESS;Database=emergencias;Trusted_Connection=True;MultipleActiveResultSets=true;Encrypt=false;TrustServerCertificate=true"
+  }
+}
+2.4. Registrar el Contexto de BD en Program.cs
+Abre el archivo Program.cs y registra el contexto de la base de datos utilizando la cadena de conexión:
+
+C#
+using ApiEmergencias.Data;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// ******* REGISTRO DEL DB CONTEXT *******
+var connectionString = builder.Configuration.GetConnectionString("EmergenciasDB");
+builder.Services.AddDbContext<EmergenciasContext>(options =>
+    options.UseSqlServer(connectionString));
+// ***************************************
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+🛠️ 3. Crear las Migraciones (Pasos Opcionales en VS)
+Si la base de datos emergencias y sus tablas no existen, EF Core puede crearlas usando migraciones.
+
+Abre la Consola del Administrador de Paquetes (menú Herramientas > Administrador de paquetes NuGet > Consola del Administrador de paquetes).
+
+Asegúrate de que el Proyecto predeterminado sea ApiEmergencias.
+
+Ejecuta los siguientes comandos:
+
+Add-Migration InitialCreate (Crea un archivo de migración basado en tus modelos).
+
+Update-Database (Aplica la migración a SQL Server, creando la base de datos emergencias y sus tablas).
+
+🚀 4. Creación de los Endpoints (Controlador)
+Crearemos el controlador EmergenciasController para implementar los endpoints solicitados.
+
+4.1. Crear el DTO para el Registro de Incidencias
+Para recibir los datos del endpoint de registro, crearemos un DTO (Objeto de Transferencia de Datos). Crea una carpeta Dtos y el archivo IncidenciaRegistroDto.cs.
+
+IncidenciaRegistroDto.cs
+C#
+using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace ApiEmergencias.Dtos
+{
+    public class IncidenciaRegistroDto
+    {
+        [Required]
+        public int TrabajadorId { get; set; }
+        
+        public int? FamiliarId { get; set; }
+        
+        public bool Pregunta1 { get; set; }
+        public bool Pregunta2 { get; set; }
+        public bool Pregunta3 { get; set; }
+        public bool Pregunta4 { get; set; }
+        public bool Pregunta5 { get; set; }
+        
+        // No se pide FechaHora, el controlador la asignará.
+    }
+}
+4.2. Crear el Controlador EmergenciasController
+Crea una carpeta Controllers (si no existe) y el archivo EmergenciasController.cs.
+
+C#
+using ApiEmergencias.Data;
+using ApiEmergencias.Dtos;
+using ApiEmergencias.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace ApiEmergencias.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class EmergenciasController : ControllerBase
+    {
+        private readonly EmergenciasContext _context;
+
+        public EmergenciasController(EmergenciasContext context)
+        {
+            _context = context;
+        }
+
+        // *******************************************************************
+        // 1. OBTENER DATOS DE TRABAJADOR Y FAMILIARES POR CÉDULA
+        // GET: api/Emergencias/trabajador/{cedula}
+        // *******************************************************************
+        [HttpGet("trabajador/{cedula}")]
+        public async Task<IActionResult> GetTrabajadorConFamiliares(string cedula)
+        {
+            if (string.IsNullOrEmpty(cedula))
+            {
+                return BadRequest("La cédula no puede estar vacía.");
+            }
+
+            var trabajador = await _context.Trabajadores
+                .Where(t => t.Cedula == cedula)
+                .Include(t => t.Familiares) // Incluye la colección de familiares
+                .FirstOrDefaultAsync();
+
+            if (trabajador == null)
+            {
+                return NotFound($"No se encontró un trabajador con la cédula {cedula}.");
+            }
+
+            // Retorna un objeto JSON con el trabajador y sus familiares.
+            return Ok(trabajador);
+        }
+
+        // *******************************************************************
+        // 2. REGISTRAR UNA INCIDENCIA
+        // POST: api/Emergencias/incidencia
+        // *******************************************************************
+        [HttpPost("incidencia")]
+        public async Task<IActionResult> RegistrarIncidencia([FromBody] IncidenciaRegistroDto incidenciaDto)
+        {
+            // 1. Validar que el TrabajadorId existe
+            var trabajadorExiste = await _context.Trabajadores
+                .AnyAsync(t => t.Id == incidenciaDto.TrabajadorId);
+
+            if (!trabajadorExiste)
+            {
+                return NotFound($"Trabajador con ID {incidenciaDto.TrabajadorId} no encontrado.");
+            }
+
+            // 2. Validar que el FamiliarId (si se proporciona) existe
+            if (incidenciaDto.FamiliarId.HasValue)
+            {
+                var familiarExiste = await _context.Familiares
+                    .AnyAsync(f => f.Id == incidenciaDto.FamiliarId.Value && f.TrabajadorId == incidenciaDto.TrabajadorId);
+                
+                if (!familiarExiste)
+                {
+                    return NotFound($"Familiar con ID {incidenciaDto.FamiliarId} no encontrado o no pertenece al trabajador especificado.");
+                }
+            }
+
+            // 3. Mapear DTO a la entidad Incidencia
+            var nuevaIncidencia = new Incidencia
+            {
+                TrabajadorId = incidenciaDto.TrabajadorId,
+                FamiliarId = incidenciaDto.FamiliarId,
+                Pregunta1 = incidenciaDto.Pregunta1,
+                Pregunta2 = incidenciaDto.Pregunta2,
+                Pregunta3 = incidenciaDto.Pregunta3,
+                Pregunta4 = incidenciaDto.Pregunta4,
+                Pregunta5 = incidenciaDto.Pregunta5,
+                FechaHora = DateTime.Now // Asignar la fecha y hora del registro
+            };
+
+            // 4. Guardar en la base de datos
+            _context.Incidencias.Add(nuevaIncidencia);
+            await _context.SaveChangesAsync();
+
+            // Retorna 201 Created y la nueva incidencia registrada
+            return CreatedAtAction(nameof(RegistrarIncidencia), new { id = nuevaIncidencia.Id }, nuevaIncidencia);
+        }
+    }
+}
+💻 5. Prueba y Ejecución
+Ejecución: Presiona F5 o el botón IIS Express en Visual Studio. Esto iniciará el servidor y abrirá la interfaz de Swagger UI (gracias a la configuración en Program.cs).
+
+Prueba del Endpoint 1: En Swagger, busca el endpoint GET /api/Emergencias/trabajador/{cedula}.
+
+Haz clic en "Try it out".
+
+Ingresa una cédula de prueba (que previamente debes haber cargado en tu tabla Trabajadores ).
+
+Haz clic en "Execute". Deberías recibir un código 200 OK con los datos del trabajador y su lista de familiares en formato JSON.
+
+Prueba del Endpoint 2: En Swagger, busca el endpoint POST /api/Emergencias/incidencia.
+
+Haz clic en "Try it out".
+
+Modifica el cuerpo de la solicitud (Request body) JSON con los IDs del trabajador, el familiar (opcional) y las respuestas Pregunta1 a Pregunta5 (true o false).
+
+Haz clic en "Execute". Deberías recibir un código 201 Created y la incidencia recién registrada.
+
+¿Te gustaría que te ayude a generar los comandos SQL para la carga de los datos de prueba (Trabajadores y Familiares) en tu base de datos emergencias?
+
+Se quiere manejar como un proyecto ASP.NET MVC 4 Web Application y no utilizar EF, sino SQL
+
+¡Entendido! Si deseas manejar el proyecto ApiEmergencias como una ASP.NET MVC 4 Web Application y utilizar ADO.NET (SQL puro) en lugar de Entity Framework (EF) para interactuar con la base de datos, el procedimiento cambia.
+
+Dado que ASP.NET MVC 4 es una tecnología más antigua que el .NET Core/5+ sugerido inicialmente, me enfocaré en cómo lograr los endpoints solicitados usando la arquitectura clásica de MVC, ADO.NET, y el formato JSON.
+
+🏗️ 1. Configuración del Proyecto en Visual Studio (ASP.NET MVC 4)
+1.1. Creación del Proyecto
+Abre Visual Studio (una versión compatible con .NET Framework 4.0/4.5).
+
+Selecciona "Crear un proyecto nuevo".
+
+Busca y selecciona la plantilla "ASP.NET MVC 4 Web Application".
+
+Nombre del proyecto: ApiEmergencias
+
+Selecciona la plantilla "Web API" para aprovechar la estructura de endpoints.
+
+Asegúrate de que el Framework seleccionado sea compatible (ej. .NET Framework 4.5).
+
+1.2. Configuración de la Conexión a SQL Server
+Abre el archivo de configuración Web.config (en la raíz del proyecto).
+
+Dentro de la etiqueta <configuration>, agrega la sección <connectionStrings>:
+
+XML
+<connectionStrings>
+    <add name="EmergenciasDB" 
+         connectionString="Server=localhost\SQLEXPRESS;Database=emergencias;Trusted_Connection=True;" 
+         providerName="System.Data.SqlClient" />
+</connectionStrings>
+
+Nota: La cadena de conexión usa la misma convención de servidor que se menciona en el archivo anexo: localhost\SQLEXPRESS.
+
+🧩 2. Implementación del Modelo y Acceso a Datos (ADO.NET)
+En esta arquitectura, crearemos los modelos (POCOs) y una clase de repositorio para manejar las conexiones y la ejecución de comandos SQL.
+
+2.1. Clases Modelo (Carpeta Models)
+Crea las clases para mapear los datos que recibirás y devolverás (similares a los POCOs de EF).
+
+C#
+// Modelos/Trabajador.cs
+public class Trabajador
+{
+    public int Id { get; set; }
+    public string Cedula { get; set; }
+    public string Nombres { get; set; }
+    public string Apellidos { get; set; }
+    public string CorreoElectronico { get; set; }
+    public string Telefono { get; set; }
+    // Propiedad para anidar Familiares en la respuesta del API
+    public List<Familiar> Familiares { get; set; }
+}
+
+// Modelos/Familiar.cs
+public class Familiar
+{
+    public int Id { get; set; }
+    public int TrabajadorId { get; set; }
+    public string Cedula { get; set; }
+    public string Nombres { get; set; }
+    public string Apellidos { get; set; }
+}
+
+// Modelos/Incidencia.cs (Para registro y mapeo interno)
+public class Incidencia
+{
+    [cite_start]// Id será IDENTITY(1,1) en la base de datos [cite: 9]
+    public int Id { get; set; } 
+    public int TrabajadorId { get; set; }
+    public int? FamiliarId { get; set; } // Puede ser nulo
+    public bool Pregunta1 { get; set; }
+    public bool Pregunta2 { get; set; }
+    public bool Pregunta3 { get; set; }
+    public bool Pregunta4 { get; set; }
+    public bool Pregunta5 { get; set; }
+    public DateTime FechaHora { get; set; } // Tipo DATETIME [cite: 9]
+}
+2.2. Repositorio ADO.NET (Carpeta DataAccess)
+Crea una carpeta DataAccess y dentro una clase EmergenciasRepository.cs para manejar toda la lógica SQL.
+
+C#
+// DataAccess/EmergenciasRepository.cs
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+
+public class EmergenciasRepository
+{
+    private readonly string _connectionString;
+
+    public EmergenciasRepository()
+    {
+        // Lee la cadena de conexión del Web.config
+        _connectionString = ConfigurationManager.ConnectionStrings["EmergenciasDB"].ConnectionString;
+    }
+
+    // *******************************************************************
+    // 1. OBTENER DATOS DE TRABAJADOR Y FAMILIARES POR CÉDULA
+    // *******************************************************************
+    public Trabajador GetTrabajadorConFamiliares(string cedula)
+    {
+        Trabajador trabajador = null;
+        Dictionary<int, Trabajador> trabajadores = new Dictionary<int, Trabajador>();
+
+        // Usamos una consulta JOIN para traer ambos conjuntos de datos
+        string sql = @"
+            SELECT 
+                t.id, t.cedula, t.nombres, t.apellidos, t.correo_electronico, t.telefono,
+                f.id AS familiar_id, f.cedula AS familiar_cedula, f.nombres AS familiar_nombres, f.apellidos AS familiar_apellidos
+            FROM Trabajadores t
+            LEFT JOIN Familiares f ON t.id = f.trabajador_id
+            WHERE t.cedula = @Cedula";
+
+        using (SqlConnection conn = new SqlConnection(_connectionString))
+        {
+            SqlCommand cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Cedula", cedula);
+            conn.Open();
+
+            using (SqlDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    int tId = reader.GetInt32(reader.GetOrdinal("id"));
+                    
+                    if (!trabajadores.ContainsKey(tId))
+                    {
+                        // Mapear datos del trabajador (solo una vez)
+                        trabajador = new Trabajador
+                        {
+                            Id = tId,
+                            Cedula = reader["cedula"].ToString(),
+                            Nombres = reader["nombres"].ToString(),
+                            Apellidos = reader["apellidos"].ToString(),
+                            CorreoElectronico = reader["correo_electronico"].ToString(),
+                            Telefono = reader["telefono"].ToString(),
+                            Familiares = new List<Familiar>()
+                        };
+                        trabajadores.Add(tId, trabajador);
+                    }
+
+                    // Mapear datos del familiar
+                    if (reader["familiar_id"] != DBNull.Value)
+                    {
+                        Familiar familiar = new Familiar
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("familiar_id")),
+                            TrabajadorId = tId,
+                            Cedula = reader["familiar_cedula"].ToString(),
+                            Nombres = reader["familiar_nombres"].ToString(),
+                            Apellidos = reader["familiar_apellidos"].ToString()
+                        };
+                        trabajadores[tId].Familiares.Add(familiar);
+                    }
+                }
+            }
+        }
+        return trabajador;
+    }
+
+    // *******************************************************************
+    // 2. REGISTRAR INCIDENCIA
+    // *******************************************************************
+    public int RegistrarIncidencia(Incidencia incidencia)
+    {
+        [cite_start]// Consulta INSERT para la tabla Incidencias [cite: 9]
+        string sql = @"
+            INSERT INTO Incidencias (trabajador_id, familiar_id, pregunta_1, pregunta_2, pregunta_3, pregunta_4, pregunta_5, fecha_hora)
+            VALUES (@Tid, @Fid, @P1, @P2, @P3, @P4, @P5, @FechaHora);
+            SELECT SCOPE_IDENTITY();"; // Devuelve el ID de la incidencia insertada
+
+        using (SqlConnection conn = new SqlConnection(_connectionString))
+        {
+            SqlCommand cmd = new SqlCommand(sql, conn);
+            
+            cmd.Parameters.AddWithValue("@Tid", incidencia.TrabajadorId);
+            // Manejo de valores nulos (familiar_id es opcional)
+            cmd.Parameters.AddWithValue("@Fid", (object)incidencia.FamiliarId ?? DBNull.Value);
+            
+            // Los campos BIT/bool se manejan como 1 (TRUE) o 0 (FALSE) en SQL Server
+            cmd.Parameters.AddWithValue("@P1", incidencia.Pregunta1);
+            cmd.Parameters.AddWithValue("@P2", incidencia.Pregunta2);
+            cmd.Parameters.AddWithValue("@P3", incidencia.Pregunta3);
+            cmd.Parameters.AddWithValue("@P4", incidencia.Pregunta4);
+            cmd.Parameters.AddWithValue("@P5", incidencia.Pregunta5);
+            
+            [cite_start]// El campo DATETIME [cite: 9]
+            cmd.Parameters.AddWithValue("@FechaHora", incidencia.FechaHora); 
+
+            conn.Open();
+            // Ejecuta el comando y obtiene el nuevo ID
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+    }
+}
+🚀 3. Creación del Controlador (Web API Controller)
+Crea un API Controller (no un MVC Controller) llamado EmergenciasController.cs en la carpeta Controllers.
+
+3.1. DTO para Registro de Incidencias
+Para recibir la información del POST, crea un DTO simple:
+
+C#
+// Dtos/IncidenciaRegistroDto.cs
+public class IncidenciaRegistroDto
+{
+    public int TrabajadorId { get; set; }
+    public int? FamiliarId { get; set; } // Puede ser nulo
+    public bool Pregunta1 { get; set; }
+    public bool Pregunta2 { get; set; }
+    public bool Pregunta3 { get; set; }
+    public bool Pregunta4 { get; set; }
+    public bool Pregunta5 { get; set; }
+}
+3.2. Implementación de EmergenciasController.cs
+C#
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+// Asegúrate de incluir las clases del Modelo y DataAccess
+namespace ApiEmergencias.Controllers
+{
+    // Hereda de ApiController
+    public class EmergenciasController : ApiController
+    {
+        private readonly EmergenciasRepository _repository;
+
+        public EmergenciasController()
+        {
+            _repository = new EmergenciasRepository();
+        }
+
+        // *******************************************************************
+        // 1. OBTENER DATOS DE TRABAJADOR Y FAMILIARES POR CÉDULA
+        // GET api/Emergencias/Trabajador/1234567890
+        // *******************************************************************
+        [HttpGet]
+        [Route("api/Emergencias/Trabajador/{cedula}")]
+        public HttpResponseMessage GetTrabajadorConFamiliares(string cedula)
+        {
+            var trabajador = _repository.GetTrabajadorConFamiliares(cedula);
+
+            if (trabajador == null)
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound, 
+                    "Trabajador no encontrado.");
+            }
+
+            // Retorna 200 OK y el objeto JSON con Trabajador y Familiares anidados
+            return Request.CreateResponse(HttpStatusCode.OK, trabajador);
+        }
+
+        // *******************************************************************
+        // 2. REGISTRAR LA INCIDENCIA
+        // POST api/Emergencias/Incidencia
+        // *******************************************************************
+        [HttpPost]
+        [Route("api/Emergencias/Incidencia")]
+        public HttpResponseMessage RegistrarIncidencia([FromBody] IncidenciaRegistroDto dto)
+        {
+            if (dto == null || dto.TrabajadorId <= 0)
+            {
+                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, 
+                    "Datos de incidencia inválidos.");
+            }
+
+            // Mapeo del DTO a la entidad de Incidencia, asignando la fecha
+            var nuevaIncidencia = new Incidencia
+            {
+                TrabajadorId = dto.TrabajadorId,
+                FamiliarId = dto.FamiliarId,
+                Pregunta1 = dto.Pregunta1,
+                Pregunta2 = dto.Pregunta2,
+                Pregunta3 = dto.Pregunta3,
+                Pregunta4 = dto.Pregunta4,
+                Pregunta5 = dto.Pregunta5,
+                FechaHora = DateTime.Now // Asignamos la fecha y hora actual
+            };
+
+            int nuevoId = _repository.RegistrarIncidencia(nuevaIncidencia);
+            nuevaIncidencia.Id = nuevoId;
+
+            // Retorna 201 Created y la nueva incidencia registrada
+            return Request.CreateResponse(HttpStatusCode.Created, nuevaIncidencia);
+        }
+    }
+}
+3.3. Configuración de Rutas (WebApiConfig.cs)
+Asegúrate de que la configuración de rutas en App_Start/WebApiConfig.cs esté configurada para usar las rutas basadas en atributos ([Route(...)]) que usamos en el controlador:
+
+C#
+// App_Start/WebApiConfig.cs
+
+public static class WebApiConfig
+{
+    public static void Register(HttpConfiguration config)
+    {
+        // Habilita las rutas basadas en atributos
+        config.MapHttpAttributeRoutes(); 
+
+        // Ruta de reserva (opcional)
+        config.Routes.MapHttpRoute(
+            name: "DefaultApi",
+            routeTemplate: "api/{controller}/{id}",
+            defaults: new { id = RouteParameter.Optional }
+        );
+    }
+}
+Se anexa imagen para la selección de plantilla, ¿cual en la adecuada, para ASP.NET MVC 4 Web Application?
+
+La plantilla adecuada para un proyecto ASP.NET MVC 4 Web Application en Visual Studio es la siguiente, basada en la imagen que proporcionaste y el contexto de las versiones de .NET Framework:
+
+🔍 Plantilla de Proyecto
+De las opciones visibles en tu imagen de Visual Studio, la plantilla correcta para empezar un proyecto con .NET Framework clásico y la arquitectura MVC es:
+
+ASP.NET Web Application (.NET Framework)
+
+1. Proceso de Selección
+Selecciona la plantilla "ASP.NET Web Application (.NET Framework)".
+
+Haz clic en "Siguiente" y luego "Crear" (o Siguiente, dependiendo de tu versión de VS).
+
+En el cuadro de diálogo "Crear un nuevo proyecto ASP.NET" que aparece a continuación, deberás seleccionar la plantilla específica. Elige:
+
+"Web API" (para enfocarte en la creación de servicios RESTful, que es lo que pide la solicitud de endpoints).
+
+"MVC" (si deseas la estructura MVC completa, pero seguirás usando un API Controller para los endpoints).
+
+Generalmente, para endpoints modernos que devuelven JSON, se selecciona la opción Web API, ya que está construida sobre el pipeline de .NET Framework para exponer servicios HTTP RESTful. ASP.NET MVC 4 fue la primera versión que integró ASP.NET Web API como una característica principal.
+
+🛠️ Procedimiento de Conexión a SQL (ADO.NET)
+Una vez que tengas tu proyecto ASP.NET Web Application (.NET Framework) con la estructura de Web API o MVC, el procedimiento con SQL (ADO.NET) es el siguiente:
+
+1. Conexión en Web.config
+La cadena de conexión para tu base de datos emergencias y tu instancia local de SQL Server Express (localhost\SQLEXPRESS) debe estar configurada en el archivo Web.config:
+
+XML
+<configuration>
+  <connectionStrings>
+    <add name="EmergenciasDB" 
+         connectionString="Server=localhost\SQLEXPRESS;Database=emergencias;Trusted_Connection=True;" 
+         providerName="System.Data.SqlClient" />
+  </connectionStrings>
+</configuration>
+2. Implementación del Repositorio (Clase ADO.NET)
+Dentro de tu proyecto (preferiblemente en una carpeta DataAccess o Repositories), crearás una clase EmergenciasRepository para manejar todas las interacciones con la base de datos usando System.Data.SqlClient.
+
+Endpoint 1: Obtener Trabajador y Familiares por Cédula
+Se requiere una consulta SQL que obtenga los datos del trabajador y, simultáneamente, los datos de sus familiares, lo cual se logra con un JOIN y luego se mapean los resultados en la aplicación C# (ADO.NET) a los objetos Trabajador y Familiar.
+
+C#
+// Dentro de EmergenciasRepository.cs
+public Trabajador GetTrabajadorConFamiliares(string cedula)
+{
+    // SQL: Usar LEFT JOIN para incluir el Trabajador incluso si no tiene Familiares.
+    string sql = "SELECT t.*, f.id AS fid, f.cedula AS fcedula, f.nombres AS fnombres, f.apellidos AS fapellidos FROM Trabajadores t LEFT JOIN Familiares f ON t.id = f.trabajador_id WHERE t.cedula = @Cedula";
+    
+    // ... Lógica ADO.NET con SqlConnection y SqlDataReader ...
+    // Aquí se lee el DataReader y se construye el objeto Trabajador que contiene una List<Familiar>
+}
+Endpoint 2: Registrar Incidencia
+Se requiere una consulta INSERT para poblar la tabla Incidencias. Los valores de pregunta_1 a pregunta_5 son de tipo BIT en SQL Server, que se mapean a bool en C#, y el fecha_hora se establece a la hora actual.
+
+C#
+// Dentro de EmergenciasRepository.cs
+public int RegistrarIncidencia(Incidencia incidencia)
+{
+    // SQL: Insertar datos en la tabla Incidencias
+    string sql = "INSERT INTO Incidencias (trabajador_id, familiar_id, pregunta_1, pregunta_2, pregunta_3, pregunta_4, pregunta_5, fecha_hora) VALUES (@Tid, @Fid, @P1, @P2, @P3, @P4, @P5, @FechaHora); SELECT SCOPE_IDENTITY();";
+    
+    // ... Lógica ADO.NET: usar parámetros para prevenir inyección SQL ...
+    // Se usa @FechaHora = DateTime.Now en C# y se mapea a DATETIME en SQL
+    // Se usa @Fid = DBNull.Value si incidencia.FamiliarId es nulo.
+}
+3. Creación del API Controller
+El controlador EmergenciasController (que debe heredar de ApiController en ASP.NET MVC 4 Web API) utiliza las funciones del repositorio para responder a las solicitudes HTTP.
+
+Endpoint 1:
+
+C#
+[HttpGet]
+[Route("api/Emergencias/trabajador/{cedula}")]
+public HttpResponseMessage GetTrabajadorConFamiliares(string cedula)
+{
+    var trabajador = _repository.GetTrabajadorConFamiliares(cedula);
+    // Retorna Request.CreateResponse(HttpStatusCode.OK, trabajador);
+}
+Endpoint 2:
+
+C#
+[HttpPost]
+[Route("api/Emergencias/incidencia")]
+public HttpResponseMessage RegistrarIncidencia([FromBody] IncidenciaRegistroDto dto)
+{
+    // Se mapea el DTO a la entidad Incidencia y se llama a _repository.RegistrarIncidencia()
+    // Retorna Request.CreateResponse(HttpStatusCode.Created, nuevaIncidencia);
+}
+El siguiente video te explica las diferencias entre las versiones de .NET y cómo ASP.NET Web API (que usarás en MVC 4) encaja en ese ecosistema: Diferencias entre .Net Framework y .Net Core.
+
+Diferencias entre .Net Framework y .Net Core | Invitado Felipe Gavilán de @gavilanch2
+hdeleon.net · 54 mil visualizaciones
+
+
+Llegue a punto de la imagen anexa, se necesita el desarrollo de las funcionalidades para conexion a la base de datos y endpoint en Visual Basic. Indicar procedimiento y ejemplo de código
+
+¡Excelente! Dado que has creado el proyecto ASP.NET Web Application y la imagen muestra que la plantilla es en Visual Basic (VB) (VB HomeController.vb en el Explorador de soluciones), adaptaremos el código de ADO.NET y los endpoints a este lenguaje.
+
+El procedimiento seguirá la estructura de ASP.NET Web API dentro del pipeline de .NET Framework, utilizando ADO.NET para la interacción directa con SQL Server.
+
+🛠️ Procedimiento y Código en Visual Basic (VB)
+1. Configuración de la Conexión a SQL Server
+Primero, debes asegurar la cadena de conexión en el archivo Web.config del proyecto. Usa el valor del servidor que mencionaste: localhost\SQLEXPRESS.
+
+XML
+<connectionStrings>
+    <add name="EmergenciasDB" 
+         connectionString="Server=localhost\SQLEXPRESS;Database=emergencias;Trusted_Connection=True;" 
+         providerName="System.Data.SqlClient" />
+</connectionStrings>
+2. Clases Modelo (Carpeta Models)
+Crea los modelos (clases POCO) en VB.NET para mapear los datos de las tablas Trabajadores, Familiares e Incidencias.
+
+Trabajador.vb
+VB.Net
+' Models/Trabajador.vb
+Imports System.Collections.Generic
+
+Public Class Trabajador
+    Public Property Id As Integer
+    Public Property Cedula As String
+    Public Property Nombres As String
+    Public Property Apellidos As String
+    Public Property CorreoElectronico As String
+    Public Property Telefono As String
+    ' Para anidar los familiares en la respuesta JSON
+    Public Property Familiares As List(Of Familiar)
+End Class
+Familiar.vb
+VB.Net
+' Models/Familiar.vb
+Public Class Familiar
+    Public Property Id As Integer
+    Public Property TrabajadorId As Integer
+    Public Property Cedula As String
+    Public Property Nombres As String
+    Public Property Apellidos As String
+End Class
+IncidenciaRegistroDto.vb (Para recibir datos del POST)
+VB.Net
+' Models/IncidenciaRegistroDto.vb
+' Usamos un DTO para simplificar la recepción de datos del endpoint POST
+Public Class IncidenciaRegistroDto
+    Public Property TrabajadorId As Integer
+    ' FamiliarId es Nullable para manejar el campo opcional
+    Public Property FamiliarId As Nullable(Of Integer)
+    Public Property Pregunta1 As Boolean
+    Public Property Pregunta2 As Boolean
+    Public Property Pregunta3 As Boolean
+    Public Property Pregunta4 As Boolean
+    Public Property Pregunta5 As Boolean
+End Class
+3. Capa de Acceso a Datos (ADO.NET - Carpeta DataAccess)
+Crea una carpeta DataAccess y la clase EmergenciasRepository.vb para manejar la lógica SQL pura.
+
+EmergenciasRepository.vb
+VB.Net
+' DataAccess/EmergenciasRepository.vb
+Imports System.Configuration
+Imports System.Data.SqlClient
+Imports System.Collections.Generic
+Imports System.Data
+
+Public Class EmergenciasRepository
+    Private ReadOnly _connectionString As String
+
+    Public Sub New()
+        ' Leer la cadena de conexión desde Web.config
+        _connectionString = ConfigurationManager.ConnectionStrings("EmergenciasDB").ConnectionString
+    End Sub
+
+    ' *******************************************************************
+    ' 1. Obtener Trabajador y Familiares
+    ' *******************************************************************
+    Public Function GetTrabajadorConFamiliares(ByVal cedula As String) As Trabajador
+        Dim trabajador As Trabajador = Nothing
+        Dim trabajadores As New Dictionary(Of Integer, Trabajador)()
+
+        Dim sql As String = "SELECT t.id, t.cedula, t.nombres, t.apellidos, t.correo_electronico, t.telefono, " & _
+                            "f.id AS familiar_id, f.cedula AS familiar_cedula, f.nombres AS familiar_nombres, f.apellidos AS familiar_apellidos " & _
+                            "FROM Trabajadores t LEFT JOIN Familiares f ON t.id = f.trabajador_id WHERE t.cedula = @Cedula"
+
+        Using conn As New SqlConnection(_connectionString)
+            Dim cmd As New SqlCommand(sql, conn)
+            cmd.Parameters.AddWithValue("@Cedula", cedula)
+            conn.Open()
+
+            Using reader As SqlDataReader = cmd.ExecuteReader()
+                While reader.Read()
+                    Dim tId As Integer = reader.GetInt32(reader.GetOrdinal("id"))
+
+                    If Not trabajadores.ContainsKey(tId) Then
+                        trabajador = New Trabajador With {
+                            .Id = tId,
+                            .Cedula = reader("cedula").ToString(),
+                            .Nombres = reader("nombres").ToString(),
+                            .Apellidos = reader("apellidos").ToString(),
+                            .CorreoElectronico = reader("correo_electronico").ToString(),
+                            .Telefono = reader("telefono").ToString(),
+                            .Familiares = New List(Of Familiar)()
+                        }
+                        trabajadores.Add(tId, trabajador)
+                    End If
+
+                    ' Mapear familiar si existe
+                    If reader("familiar_id") IsNot DBNull.Value Then
+                        Dim familiar As New Familiar With {
+                            .Id = reader.GetInt32(reader.GetOrdinal("familiar_id")),
+                            .TrabajadorId = tId,
+                            .Cedula = reader("familiar_cedula").ToString(),
+                            .Nombres = reader("familiar_nombres").ToString(),
+                            .Apellidos = reader("familiar_apellidos").ToString()
+                        }
+                        trabajadores(tId).Familiares.Add(familiar)
+                    End If
+                End While
+            End Using
+        End Using
+        Return trabajador
+    End Function
+
+    ' *******************************************************************
+    ' 2. Registrar Incidencia
+    ' *******************************************************************
+    Public Function RegistrarIncidencia(ByVal dto As IncidenciaRegistroDto) As Integer
+        ' Script SQL para insertar en Incidencias [cite: 9]
+        Dim sql As String = "INSERT INTO Incidencias (trabajador_id, familiar_id, pregunta_1, pregunta_2, pregunta_3, pregunta_4, pregunta_5, fecha_hora) " & _
+                            "VALUES (@Tid, @Fid, @P1, @P2, @P3, @P4, @P5, @FechaHora); SELECT SCOPE_IDENTITY();"
+
+        Using conn As New SqlConnection(_connectionString)
+            Dim cmd As New SqlCommand(sql, conn)
+
+            cmd.Parameters.AddWithValue("@Tid", dto.TrabajadorId)
+
+            ' Manejo de Nullable(Of Integer) para FamiliarId
+            If dto.FamiliarId.HasValue Then
+                cmd.Parameters.AddWithValue("@Fid", dto.FamiliarId.Value)
+            Else
+                cmd.Parameters.AddWithValue("@Fid", DBNull.Value)
+            End If
+
+            ' Los BIT/Booleanos en VB/C# se envían como 1 o 0 a SQL Server
+            cmd.Parameters.AddWithValue("@P1", dto.Pregunta1)
+            cmd.Parameters.AddWithValue("@P2", dto.Pregunta2)
+            cmd.Parameters.AddWithValue("@P3", dto.Pregunta3)
+            cmd.Parameters.AddWithValue("@P4", dto.Pregunta4)
+            cmd.Parameters.AddWithValue("@P5", dto.Pregunta5)
+
+            ' El campo fecha_hora es DATETIME en SQL [cite: 9]
+            cmd.Parameters.AddWithValue("@FechaHora", DateTime.Now)
+
+            conn.Open()
+            ' Ejecuta y devuelve el nuevo ID
+            Return Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
+    End Function
+End Class
+4. Controlador de API (Carpeta Controllers)
+Crea el API Controller llamado EmergenciasController.vb para exponer los endpoints HTTP.
+
+EmergenciasController.vb
+VB.Net
+' Controllers/EmergenciasController.vb
+Imports System.Web.Http
+Imports System.Net
+Imports System.Net.Http
+' Asegúrate de que las referencias a los modelos y DataAccess estén correctas
+Imports ApiEmergencias.Models
+Imports ApiEmergencias.DataAccess ' Asume este Namespace para la clase Repository
+
+Public Class EmergenciasController
+    Inherits ApiController
+
+    Private ReadOnly _repository As New EmergenciasRepository()
+
+    ' *******************************************************************
+    ' 1. Endpoint: Obtener Trabajador y Familiares por Cédula
+    ' GET api/Emergencias/Trabajador/{cedula}
+    ' *******************************************************************
+    <HttpGet>
+    <Route("api/Emergencias/Trabajador/{cedula}")>
+    Public Function GetTrabajadorConFamiliares(ByVal cedula As String) As HttpResponseMessage
+        Dim trabajador As Trabajador = _repository.GetTrabajadorConFamiliares(cedula)
+
+        If trabajador Is Nothing Then
+            ' 404 Not Found
+            Return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Trabajador con cédula " & cedula & " no encontrado.")
+        End If
+
+        ' 200 OK y devuelve el objeto Trabajador (que incluye Familiares) en formato JSON
+        Return Request.CreateResponse(HttpStatusCode.OK, trabajador)
+    End Function
+
+    ' *******************************************************************
+    ' 2. Endpoint: Registrar Incidencia
+    ' POST api/Emergencias/Incidencia
+    ' *******************************************************************
+    <HttpPost>
+    <Route("api/Emergencias/Incidencia")>
+    Public Function RegistrarIncidencia(<FromBody()> ByVal dto As IncidenciaRegistroDto) As HttpResponseMessage
+        If dto Is Nothing OrElse dto.TrabajadorId <= 0 Then
+            Return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Datos de incidencia inválidos.")
+        End If
+
+        Try
+            Dim nuevoId As Integer = _repository.RegistrarIncidencia(dto)
+            
+            ' Creación de objeto respuesta para mostrar el ID generado
+            Dim respuesta As New With {
+                .Id = nuevoId,
+                .TrabajadorId = dto.TrabajadorId,
+                .FamiliarId = dto.FamiliarId,
+                .FechaHora = DateTime.Now.ToString() ' Fecha real de inserción
+            }
+
+            ' 201 Created
+            Return Request.CreateResponse(HttpStatusCode.Created, respuesta)
+
+        Catch ex As Exception
+            ' 500 Internal Server Error
+            ' En un entorno real, se debería loggear el error
+            Return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error al registrar la incidencia: " & ex.Message)
+        End Try
+    End Function
+
+End Class
+5. Activación de Rutas
+Asegúrate de que el enrutamiento basado en atributos ([Route(...)]) esté activado en App_Start/WebApiConfig.vb:
+
+VB.Net
+' App_Start/WebApiConfig.vb
+Imports System.Web.Http
+
+Public Module WebApiConfig
+    Public Sub Register(ByVal config As HttpConfiguration)
+        ' HABILITAR EL ENRUTAMIENTO POR ATRIBUTOS
+        config.MapHttpAttributeRoutes()
+
+        ' Rutas predeterminadas (si es necesario)
+        config.Routes.MapHttpRoute( _
+            name:="DefaultApi", _
+            routeTemplate:="api/{controller}/{id}", _
+            defaults:=New With {.id = RouteParameter.Optional} _
+        )
+    End Sub
+End Module
+No se observa en la carpeta App_Start el archivo WebApiConfig.vb
+
+Entiendo. Si has creado el proyecto como una ASP.NET Web Application (.NET Framework) y seleccionaste la plantilla MVC en lugar de Web API, es común que el archivo WebApiConfig.vb no se genere automáticamente en la carpeta App_Start.
+
+Para solucionar esto, tienes dos opciones: Crear el archivo e implementarlo, o usar el enrutamiento existente en RouteConfig.vb (la opción más sencilla si solo tienes un controlador de API).
+
+Te recomiendo la Opción 1 para mantener la convención de Web API y luego te muestro la implementación del código VB en la estructura de tu proyecto (image_c172a3.png).
+
+📂 Opción 1: Crear WebApiConfig.vb (Recomendado)
+Crea manualmente el archivo WebApiConfig.vb en la carpeta App_Start y modifícalo para habilitar el enrutamiento basado en atributos ([Route(...)]) que usamos en el controlador:
+
+1. Crear el archivo
+En el Explorador de soluciones, haz clic derecho en la carpeta App_Start.
+
+Selecciona Agregar > Nuevo elemento...
+
+Selecciona Clase (o Módulo).
+
+Nómbralo WebApiConfig.vb y haz clic en Agregar.
+
+2. Implementar el código de configuración
+Abre el nuevo archivo WebApiConfig.vb y pega el siguiente código:
+
+VB.Net
+' App_Start/WebApiConfig.vb
+Imports System.Web.Http
+
+Public Module WebApiConfig
+    Public Sub Register(ByVal config As HttpConfiguration)
+        ' HABILITAR EL ENRUTAMIENTO POR ATRIBUTOS
+        config.MapHttpAttributeRoutes()
+
+        ' Ruta predeterminada para el controlador de API (si es necesario)
+        config.Routes.MapHttpRoute( _
+            name:="DefaultApi", _
+            routeTemplate:="api/{controller}/{id}", _
+            defaults:=New With {.id = RouteParameter.Optional} _
+        )
+    End Sub
+End Module
+3. Llamar a la configuración en Global.asax
+Para que esta configuración se ejecute al iniciar la aplicación, debes llamarla en el método Application_Start del archivo Global.asax.vb:
+
+VB.Net
+' Global.asax.vb (en el método Application_Start)
+Sub Application_Start()
+    AreaRegistration.RegisterAllAreas()
+
+    ' LLAMAR A LA CONFIGURACIÓN DEL API WEB
+    GlobalConfiguration.Configure(AddressOf WebApiConfig.Register)
+
+    FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters)
+    RouteConfig.RegisterRoutes(RouteTable.Routes)
+    BundleConfig.RegisterBundles(BundleTable.Bundles)
+End Sub
+Nota: Necesitarás agregar la línea Imports System.Web.Http a tu Global.asax.vb si aún no existe.
+
+💻 Desarrollo de Código en Visual Basic (VB)
+Ahora, implementaremos el código ADO.NET en las carpetas Models, DataAccess y Controllers de tu proyecto (ApiEmergencias).
+
+1. Estructura de Clases Modelo (Models)
+Crea las clases dentro de la carpeta Models para mapear los datos.
+
+Trabajador.vb
+VB.Net
+' Models/Trabajador.vb
+Imports System.Collections.Generic
+
+Public Class Trabajador
+    Public Property Id As Integer
+    Public Property Cedula As String
+    Public Property Nombres As String
+    Public Property Apellidos As String
+    Public Property CorreoElectronico As String
+    Public Property Telefono As String
+    Public Property Familiares As List(Of Familiar)
+End Class
+Familiar.vb
+VB.Net
+' Models/Familiar.vb
+Public Class Familiar
+    Public Property Id As Integer
+    Public Property TrabajadorId As Integer
+    Public Property Cedula As String
+    Public Property Nombres As String
+    Public Property Apellidos As String
+End Class
+IncidenciaRegistroDto.vb (Para el POST)
+VB.Net
+' Models/IncidenciaRegistroDto.vb
+Public Class IncidenciaRegistroDto
+    Public Property TrabajadorId As Integer
+    Public Property FamiliarId As Nullable(Of Integer) ' Para manejar el campo opcional
+    Public Property Pregunta1 As Boolean
+    Public Property Pregunta2 As Boolean
+    Public Property Pregunta3 As Boolean
+    Public Property Pregunta4 As Boolean
+    Public Property Pregunta5 As Boolean
+End Class
+2. Capa de Acceso a Datos (DataAccess)
+El código para el repositorio que usa SQL Server.
+
+EmergenciasRepository.vb
+VB.Net
+' DataAccess/EmergenciasRepository.vb
+Imports System.Configuration
+Imports System.Data.SqlClient
+Imports System.Collections.Generic
+
+Public Class EmergenciasRepository
+    Private ReadOnly _connectionString As String
+
+    Public Sub New()
+        ' Obtener la cadena de conexión del Web.config (Server=localhost\SQLEXPRESS)
+        _connectionString = ConfigurationManager.ConnectionStrings("EmergenciasDB").ConnectionString
+    End Sub
+
+    ' 1. FUNCIONALIDAD: Obtener Trabajador y Familiares por Cédula
+    Public Function GetTrabajadorConFamiliares(ByVal cedula As String) As Trabajador
+        Dim trabajador As Trabajador = Nothing
+        Dim trabajadores As New Dictionary(Of Integer, Trabajador)()
+        
+        ' Usamos LEFT JOIN para traer el trabajador y sus familiares
+        Dim sql As String = "SELECT t.id, t.cedula, t.nombres, t.apellidos, t.correo_electronico, t.telefono, " & _
+                            "f.id AS familiar_id, f.cedula AS familiar_cedula, f.nombres AS familiar_nombres, f.apellidos AS familiar_apellidos " & _
+                            "FROM Trabajadores t LEFT JOIN Familiares f ON t.id = f.trabajador_id WHERE t.cedula = @Cedula"
+
+        Using conn As New SqlConnection(_connectionString)
+            Dim cmd As New SqlCommand(sql, conn)
+            cmd.Parameters.AddWithValue("@Cedula", cedula)
+            conn.Open()
+
+            Using reader As SqlDataReader = cmd.ExecuteReader()
+                While reader.Read()
+                    Dim tId As Integer = reader.GetInt32(reader.GetOrdinal("id"))
+
+                    If Not trabajadores.ContainsKey(tId) Then
+                        ' Mapear datos del trabajador
+                        trabajador = New Trabajador With {
+                            .Id = tId,
+                            .Cedula = reader("cedula").ToString(),
+                            .Nombres = reader("nombres").ToString(),
+                            .Apellidos = reader("apellidos").ToString(),
+                            .CorreoElectronico = reader("correo_electronico").ToString(),
+                            .Telefono = reader("telefono").ToString(),
+                            .Familiares = New List(Of Familiar)()
+                        }
+                        trabajadores.Add(tId, trabajador)
+                    End If
+
+                    ' Mapear datos del familiar si la columna no es nula
+                    If reader("familiar_id") IsNot DBNull.Value Then
+                        Dim familiar As New Familiar With {
+                            .Id = reader.GetInt32(reader.GetOrdinal("familiar_id")),
+                            .TrabajadorId = tId,
+                            .Cedula = reader("familiar_cedula").ToString(),
+                            .Nombres = reader("familiar_nombres").ToString(),
+                            .Apellidos = reader("familiar_apellidos").ToString()
+                        }
+                        trabajadores(tId).Familiares.Add(familiar)
+                    End If
+                End While
+            End Using
+        End Using
+        Return trabajador
+    End Function
+
+    ' 2. FUNCIONALIDAD: Registrar Incidencia
+    Public Function RegistrarIncidencia(ByVal dto As IncidenciaRegistroDto) As Integer
+        Dim sql As String = "INSERT INTO Incidencias (trabajador_id, familiar_id, pregunta_1, pregunta_2, pregunta_3, pregunta_4, pregunta_5, fecha_hora) " & _
+                            "VALUES (@Tid, @Fid, @P1, @P2, @P3, @P4, @P5, @FechaHora); SELECT SCOPE_IDENTITY();"
+
+        Using conn As New SqlConnection(_connectionString)
+            Dim cmd As New SqlCommand(sql, conn)
+
+            cmd.Parameters.AddWithValue("@Tid", dto.TrabajadorId)
+            
+            ' Manejo de valor nulo para FamiliarId
+            If dto.FamiliarId.HasValue Then
+                cmd.Parameters.AddWithValue("@Fid", dto.FamiliarId.Value)
+            Else
+                cmd.Parameters.AddWithValue("@Fid", DBNull.Value)
+            End If
+
+            cmd.Parameters.AddWithValue("@P1", dto.Pregunta1)
+            cmd.Parameters.AddWithValue("@P2", dto.Pregunta2)
+            cmd.Parameters.AddWithValue("@P3", dto.Pregunta3)
+            cmd.Parameters.AddWithValue("@P4", dto.Pregunta4)
+            cmd.Parameters.AddWithValue("@P5", dto.Pregunta5)
+
+            cmd.Parameters.AddWithValue("@FechaHora", DateTime.Now) ' Se usa la hora del servidor de aplicación
+
+            conn.Open()
+            ' Ejecuta el comando y devuelve el ID recién creado
+            Return Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
+    End Function
+End Class
+3. API Controller (Controllers)
+El archivo EmergenciasController.vb ya existe en tu proyecto. Modifícalo para usar el repositorio y exponer los endpoints solicitados.
+
+EmergenciasController.vb
+VB.Net
+' Controllers/EmergenciasController.vb
+Imports System.Web.Http
+Imports System.Net
+Imports System.Net.Http
+Imports ApiEmergencias.Models
+Imports ApiEmergencias.DataAccess ' Namespace del Repositorio
+
+Public Class EmergenciasController
+    Inherits ApiController
+
+    Private ReadOnly _repository As New EmergenciasRepository()
+
+    ' *******************************************************************
+    ' 1. Endpoint: Obtener Trabajador y Familiares por Cédula
+    ' GET api/Emergencias/Trabajador/{cedula}
+    ' *******************************************************************
+    <HttpGet>
+    <Route("api/Emergencias/Trabajador/{cedula}")>
+    Public Function GetTrabajadorConFamiliares(ByVal cedula As String) As HttpResponseMessage
+        Dim trabajador As Trabajador = _repository.GetTrabajadorConFamiliares(cedula)
+
+        If trabajador Is Nothing Then
+            ' HTTP 404 Not Found
+            Return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Trabajador con cédula " & cedula & " no encontrado.")
+        End If
+
+        ' HTTP 200 OK, devuelve JSON
+        Return Request.CreateResponse(HttpStatusCode.OK, trabajador)
+    End Function
+
+    ' *******************************************************************
+    ' 2. Endpoint: Registrar Incidencia
+    ' POST api/Emergencias/Incidencia
+    ' *******************************************************************
+    <HttpPost>
+    <Route("api/Emergencias/Incidencia")>
+    Public Function RegistrarIncidencia(<FromBody()> ByVal dto As IncidenciaRegistroDto) As HttpResponseMessage
+        If dto Is Nothing OrElse dto.TrabajadorId <= 0 Then
+            ' HTTP 400 Bad Request
+            Return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Datos de incidencia incompletos o inválidos.")
+        End If
+
+        Try
+            ' Registrar en la BD y obtener el ID generado
+            Dim nuevoId As Integer = _repository.RegistrarIncidencia(dto)
+            
+            ' Objeto de respuesta para confirmar la inserción
+            Dim respuesta As New With {
+                .Id = nuevoId,
+                .TrabajadorId = dto.TrabajadorId,
+                .FamiliarId = dto.FamiliarId,
+                .FechaHora = DateTime.Now.ToString()
+            }
+
+            ' HTTP 201 Created
+            Return Request.CreateResponse(HttpStatusCode.Created, respuesta)
+
+        Catch ex As Exception
+            ' HTTP 500 Internal Server Error
+            Return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, "Error en el servidor al registrar la incidencia.")
+        End Try
+    End Function
+
+End Class
+En la imagen anexa, se puede observar en rojo (error) las declaraciones "ApiController" y "Request". Causas y sugerencias de corrección.
+
+El error que observas, marcado en rojo en las declaraciones ApiController y Request dentro de tu archivo EmergenciasController.vb, se debe a que la clase base y el objeto HTTP que estás intentando usar no se encuentran en el namespace que has importado.
+
+Estás importando elementos de ASP.NET MVC (System.Web.Mvc) y Web Forms (System.Web), pero no la librería específica para ASP.NET Web API.
+
+🛑 Causas y Correcciones Sugeridas
+1. Error en la Declaración de ApiController
+Elemento	Código con Error	Causa	Corrección Sugerida
+Clase Base	Inherits ApiController	ApiController pertenece a la librería de Web API, la cual no está importada.	Debes importar el namespace System.Web.Http.
+2. Error en el Objeto Request
+Elemento	Código con Error	Causa	Corrección Sugerida
+Objeto HTTP	Return Request.CreateErrorResponse(...)	El objeto Request (que es en realidad Me.Request cuando heredas de ApiController) y sus métodos (CreateErrorResponse, CreateResponse) requieren la importación de librerías HTTP específicas.	Debes importar los namespaces System.Net.Http y, para métodos auxiliares, System.Web.Http.
+✅ Solución: Actualización de Importaciones
+Debes modificar las declaraciones Imports al inicio de tu archivo EmergenciasController.vb para incluir las librerías necesarias de ASP.NET Web API.
+
+Código de EmergenciasController.vb Corregido
+Abre el archivo y asegúrate de que tenga estas cuatro líneas de Imports:
+
+VB.Net
+' Controllers/EmergenciasController.vb
+
+' ESTA ES LA CAUSA DEL ERROR, DEBE SER REMOVIDA O COMENTADA:
+' Imports System.Web.Mvc 
+
+Imports System.Web.Http           ' <-- NECESARIA para ApiController y métodos auxiliares
+Imports System.Net                ' <-- NECESARIA para HttpStatusCode
+Imports System.Net.Http           ' <-- NECESARIA para HttpResponseMessage y Request.CreateResponse
+' Imports System.Web              ' <-- Opcional, pero no debe causar error
+
+Imports ApiEmergencias.Models
+Imports ApiEmergencias.DataAccess 
+
+Public Class EmergenciasController
+    ' ApiController ahora se resuelve correctamente
+    Inherits ApiController
+
+    Private ReadOnly _repository As New EmergenciasRepository()
+
+    ' ... resto del código del controlador ...
+
+    Public Function GetTrabajadorConFamiliares(ByVal cedula As String) As HttpResponseMessage
+        ' ...
+        If trabajador Is Nothing Then
+            ' Request y HttpStatusCode ahora se resuelven correctamente
+            Return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Trabajador con cédula " & cedula & " no encontrado.")
+        End If
+        ' ...
+    End Function
+
+    ' ...
+End Class
+Al agregar Imports System.Web.Http y Imports System.Net.Http, el compilador podrá resolver la referencia a ApiController (la clase base) y los métodos de extensión para el objeto Request (para crear las respuestas HTTP).
+
+💡 Paso Adicional: Verificación de Referencias
+Si el error persiste después de corregir los Imports, es posible que tu proyecto no tenga la referencia a la librería System.Web.Http agregada:
+
+En el Explorador de soluciones, expande References.
+
+Busca la referencia System.Web.Http.
+
+Si no está, haz clic derecho en References y selecciona Add Reference....
+
+En Assemblies (Ensamblados) > Framework, busca y marca System.Web.Http y System.Net.Http.
+
+Haz clic en OK.
+
+Las dependencias sugeridas, ya forma parte del controlador, sin embargo hay error.
+
+Observando la última imagen (image_c1dc42.jpg), parece que el problema no es que falten las referencias, sino que una línea de código está causando un conflicto en el namespace del controlador.
+
+🛑 El Problema: Conflicto de Namespace
+La imagen muestra que la primera línea de tu archivo EmergenciasController.vb es:
+
+VB.Net
+Imports System.Web.Mvc 
+Causa del Error:
+El error ocurre porque estás heredando de ApiController (Inherits ApiController), pero al mismo tiempo estás importando el namespace System.Web.Mvc.
+
+System.Web.Mvc es la librería para controladores MVC tradicionales.
+
+System.Web.Http es la librería para Web API controllers.
+
+Aunque ambos pueden coexistir en un proyecto ASP.NET (.NET Framework), importar la librería de MVC en un archivo que debe funcionar exclusivamente como Web API puede causar conflictos de resolución o errores de sintaxis, especialmente si ya tienes el controlador HomeController.vb que probablemente sí utiliza System.Web.Mvc.
+
+El problema con la importación:
+La importación Imports System.Web.Mvc no es necesaria para un ApiController y puede estar interfiriendo con las otras importaciones (System.Web.Http, System.Net, System.Net.Http), causando que Visual Basic no resuelva correctamente los tipos ApiController y Request (que son nativos de System.Web.Http y System.Net.Http).
+
+✅ Corrección: Eliminación de la Importación Conflictiva
+La solución más directa y limpia es eliminar (o comentar) la línea que importa System.Web.Mvc.
+
+1. Modificar EmergenciasController.vb
+Abre el archivo EmergenciasController.vb y asegúrate de que las importaciones se vean exactamente así:
+
+VB.Net
+' Controllers/EmergenciasController.vb
+
+' ❗ ESTA LÍNEA DEBE SER ELIMINADA O COMENTADA ❗
+' Imports System.Web.Mvc 
+
+Imports System.Web.Http         ' Para la clase ApiController y el objeto Request
+Imports System.Net              ' Para HttpStatusCode
+Imports System.Net.Http         ' Para HttpResponseMessage y el método CreateResponse
+Imports ApiEmergencias.Models
+Imports ApiEmergencias.DataAccess 
+
+' ... el resto del código ...
+2. Verificar la Clase Base
+Una vez que elimines esa línea, las referencias a ApiController, Request, y HttpStatusCode deberían resolverse inmediatamente, permitiendo que el controlador herede correctamente:
+
+VB.Net
+Public Class EmergenciasController
+    Inherits ApiController  ' <-- Debe resolverse correctamente
+    
+    ' ...
+    
+    Public Function GetTrabajadorConFamiliares(ByVal cedula As String) As HttpResponseMessage
+        ' ...
+        Return Request.CreateErrorResponse(HttpStatusCode.NotFound, "Trabajador con cédula " & cedula & " no encontrado.")
+        ' ...
+    End Function
+End Class
+3. Verificar Rutas (Opcional)
+Asegúrate de haber configurado WebApiConfig.vb y de haberlo llamado en Global.asax.vb para que las rutas basadas en atributos (<Route(...)>) funcionen, como se describió en el paso anterior. Si el proyecto es puramente MVC, verifica que RouteConfig.vb no interfiera con las rutas /api/Emergencias/....
+
+Sigue mostrando el error, como se muestra en la imagen
+
+Tienes razón, el error de ApiController persiste a pesar de haber corregido las importaciones, tal como se ve en la última imagen.
+
+Esto indica que el problema no es de namespaces en el archivo, sino de que la referencia al ensamblado de ASP.NET Web API no está disponible en tu proyecto de Visual Studio.
+
+🛑 El Problema: Referencia Faltante del Ensamble
+Aunque el código de Visual Basic (VB) es correcto y las declaraciones Imports son las adecuadas para Web API, si la librería principal del framework no está agregada al proyecto, el compilador no puede encontrar la definición de la clase ApiController.
+
+Causa Principal
+El proyecto ApiEmergencias se creó usando la plantilla ASP.NET Web Application (.NET Framework) y, al parecer, se seleccionó una opción que no incluyó automáticamente la librería de Web API. Por eso, aunque importas System.Web.Http en tu código, la referencia física a ese DLL (Dynamic Link Library) no existe en la carpeta References del proyecto.
+
+✅ Solución: Agregar la Referencia Manualmente
+Debes agregar la referencia a System.Web.Http y System.Net.Http (si falta) a tu proyecto en el Explorador de Soluciones.
+
+Pasos para Agregar la Referencia
+En el Explorador de soluciones (panel derecho de tu Visual Studio), expande la carpeta ApiEmergencias.
+
+Busca y haz clic derecho en el nodo References.
+
+Selecciona Add Reference... (Agregar referencia...).
+
+En la ventana Reference Manager (Administrador de referencias): a. Ve a la sección Assemblies (Ensamblados) y luego a Framework. b. Busca y marca la casilla junto a System.Web.Http. c. Asegúrate también de que System.Net.Http esté marcada (es necesaria para HttpResponseMessage y los métodos CreateResponse). d. Si tu proyecto es MVC 4/5, también busca y marca System.Web.Http.WebHost.
+
+Haz clic en OK.
+
+Una vez que se agreguen estas referencias, el compilador debe resolver las definiciones de ApiController y los métodos Request.CreateErrorResponse y Request.CreateResponse, y los errores deberían desaparecer.
+
+🧐 Verificación Adicional del Código VB
+Si los errores no desaparecen después de agregar la referencia, verifica también estos detalles en tu EmergenciasController.vb (tal como se ve en la imagen):
+
+Elimina la Importación Conflictiva: Asegúrate de que la línea Imports System.Web.Mvc esté eliminada o comentada (línea 1 en tu imagen). El controlador EmergenciasController no debe usarla.
+
+Verifica la Firma del Atributo Route: En proyectos de ASP.NET Web API (no Core), el atributo Route requiere el namespace correcto. Asegúrate de que tengas una ruta base definida en WebApiConfig.vb o que estés usando el atributo [RoutePrefix("api/Emergencias")] en la clase y luego rutas relativas ([Route("Trabajador/{cedula}")]). Dado que estás usando rutas completas en el método: <Route("api/Emergencias/Trabajador/{cedula}")>, esto debería funcionar una vez que System.Web.Http sea referenciado correctamente.
+
+Verifica el Nombre del Archivo de Configuración: Confirma que el archivo WebApiConfig.vb se creó y se llama correctamente en Global.asax.vb para que las rutas basadas en atributos se registren al inicio de la aplicación.
+
+Las rutas en mi editor presentan error, a que se debe?
+
+El error que ves en las rutas de tu EmergenciasController.vb (específicamente en el atributo <Route(...)>) se debe a que la librería que define y habilita ese atributo de enrutamiento no está referenciada o no se está importando correctamente.
+
+La clase que define el atributo Route es System.Web.Http.Routing.RouteAttribute, y para usarlo en Web API, necesitas el namespace System.Web.Http y la dependencia de System.Web.Http.WebHost.
+
+🛑 Causas y Soluciones para el Error de Rutas
+El error en el atributo <Route(...)> tiene dos causas probables en tu entorno de proyecto de ASP.NET Web API en VB.NET:
+
+1. Causa Principal: Falta de Referencia al Ensamble
+Aunque ya resolviste los errores de ApiController (probablemente agregando System.Web.Http a las referencias), la funcionalidad de las rutas a menudo reside en un paquete relacionado o requiere que el namespace sea explícitamente reconocido.
+
+Solución 1: Verificar Referencia de WebHost
+
+Haz clic derecho en References en el Explorador de soluciones.
+
+Selecciona Add Reference....
+
+Busca y asegúrate de que System.Web.Http.WebHost esté marcado y agregado. Este ensamble proporciona la integración entre Web API y ASP.NET MVC/WebForms.
+
+2. Causa Secundaria: Falta de Importación de System.Web.Http.Routing
+A veces, el compilador VB.NET no puede resolver el atributo Route directamente sin la importación explícita de su namespace completo.
+
+Solución 2: Agregar Imports Adicional
+
+Abre tu archivo EmergenciasController.vb.
+
+Agrega la siguiente línea a la lista de Imports en la parte superior del archivo:
+
+VB.Net
+Imports System.Web.Http.Routing
+💡 Verificación de la Configuración del Enrutamiento
+Para que el atributo <Route(...)> funcione, el enrutamiento basado en atributos debe estar activado al inicio de tu aplicación.
+
+Asegúrate de que tu WebApiConfig.vb (o donde configures tus rutas) tenga la siguiente línea:
+
+VB.Net
+' En WebApiConfig.vb
+config.MapHttpAttributeRoutes() 
+Y que la llamada a esta configuración esté en Global.asax.vb:
+
+VB.Net
+' En Global.asax.vb (dentro de Application_Start)
+GlobalConfiguration.Configure(AddressOf WebApiConfig.Register)
+Al resolver el error de ApiController (que ya hiciste) y al asegurar que System.Web.Http.WebHost está referenciado, el compilador debe poder resolver el atributo <Route(...)> y sus parámetros.
+
+
+
+

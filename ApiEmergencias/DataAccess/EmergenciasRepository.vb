@@ -1,0 +1,100 @@
+﻿' DataAccess/EmergenciasRepository.vb
+Imports System.Configuration
+Imports System.Data.SqlClient
+Imports System.Collections.Generic
+Imports System.Data
+
+Public Class EmergenciasRepository
+    Private ReadOnly _connectionString As String
+
+    Public Sub New()
+        ' Leer la cadena de conexión desde Web.config
+        _connectionString = ConfigurationManager.ConnectionStrings("EmergenciasDB").ConnectionString
+    End Sub
+
+    ' *******************************************************************
+    ' 1. Obtener Trabajador y Familiares
+    ' *******************************************************************
+    Public Function GetTrabajadorConFamiliares(ByVal cedula As String) As Trabajador
+        Dim trabajador As Trabajador = Nothing
+        Dim trabajadores As New Dictionary(Of Integer, Trabajador)()
+
+        Dim sql As String = "SELECT t.id, t.cedula, t.nombres, t.apellidos, t.correo_electronico, t.telefono, " &
+                            "f.id AS familiar_id, f.cedula AS familiar_cedula, f.nombres AS familiar_nombres, f.apellidos AS familiar_apellidos " &
+                            "FROM Trabajadores t LEFT JOIN Familiares f ON t.id = f.trabajador_id WHERE t.cedula = @Cedula"
+
+        Using conn As New SqlConnection(_connectionString)
+            Dim cmd As New SqlCommand(sql, conn)
+            cmd.Parameters.AddWithValue("@Cedula", cedula)
+            conn.Open()
+
+            Using reader As SqlDataReader = cmd.ExecuteReader()
+                While reader.Read()
+                    Dim tId As Integer = reader.GetInt32(reader.GetOrdinal("id"))
+
+                    If Not trabajadores.ContainsKey(tId) Then
+                        trabajador = New Trabajador With {
+                            .Id = tId,
+                            .Cedula = reader("cedula").ToString(),
+                            .Nombres = reader("nombres").ToString(),
+                            .Apellidos = reader("apellidos").ToString(),
+                            .CorreoElectronico = reader("correo_electronico").ToString(),
+                            .Telefono = reader("telefono").ToString(),
+                            .Familiares = New List(Of Familiar)()
+                        }
+                        trabajadores.Add(tId, trabajador)
+                    End If
+
+                    ' Mapear familiar si existe
+                    If reader("familiar_id") IsNot DBNull.Value Then
+                        Dim familiar As New Familiar With {
+                            .Id = reader.GetInt32(reader.GetOrdinal("familiar_id")),
+                            .TrabajadorId = tId,
+                            .Cedula = reader("familiar_cedula").ToString(),
+                            .Nombres = reader("familiar_nombres").ToString(),
+                            .Apellidos = reader("familiar_apellidos").ToString()
+                        }
+                        trabajadores(tId).Familiares.Add(familiar)
+                    End If
+                End While
+            End Using
+        End Using
+        Return trabajador
+    End Function
+
+    ' *******************************************************************
+    ' 2. Registrar Incidencia
+    ' *******************************************************************
+    Public Function RegistrarIncidencia(ByVal dto As IncidenciaRegistroDto) As Integer
+        ' Script SQL para insertar en Incidencias [cite: 9]
+        Dim sql As String = "INSERT INTO Incidencias (trabajador_id, familiar_id, pregunta_1, pregunta_2, pregunta_3, pregunta_4, pregunta_5, fecha_hora) " &
+                            "VALUES (@Tid, @Fid, @P1, @P2, @P3, @P4, @P5, @FechaHora); SELECT SCOPE_IDENTITY();"
+
+        Using conn As New SqlConnection(_connectionString)
+            Dim cmd As New SqlCommand(sql, conn)
+
+            cmd.Parameters.AddWithValue("@Tid", dto.TrabajadorId)
+
+            ' Manejo de Nullable(Of Integer) para FamiliarId
+            If dto.FamiliarId.HasValue Then
+                cmd.Parameters.AddWithValue("@Fid", dto.FamiliarId.Value)
+            Else
+                cmd.Parameters.AddWithValue("@Fid", DBNull.Value)
+            End If
+
+            ' Los BIT/Booleanos en VB/C# se envían como 1 o 0 a SQL Server
+            cmd.Parameters.AddWithValue("@P1", dto.Pregunta1)
+            cmd.Parameters.AddWithValue("@P2", dto.Pregunta2)
+            cmd.Parameters.AddWithValue("@P3", dto.Pregunta3)
+            cmd.Parameters.AddWithValue("@P4", dto.Pregunta4)
+            cmd.Parameters.AddWithValue("@P5", dto.Pregunta5)
+
+            ' El campo fecha_hora es DATETIME en SQL [cite: 9]
+            cmd.Parameters.AddWithValue("@FechaHora", DateTime.Now)
+
+            conn.Open()
+            ' Ejecuta y devuelve el nuevo ID
+            Return Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
+    End Function
+End Class
