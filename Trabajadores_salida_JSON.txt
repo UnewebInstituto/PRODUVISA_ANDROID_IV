@@ -1,0 +1,38 @@
+{
+  "Id": 1,
+  "Cedula": "V12345678",
+  "Nombres": "Carlos",
+  "Apellidos": "Pérez",
+  "CorreoElectronico": "carlos.perez@example.com",
+  "Telefono": "04141234567",
+  "Familiares": [
+    {
+      "Id": 1,
+      "TrabajadorId": 1,
+      "Cedula": "V11111111",
+      "Nombres": "Ana",
+      "Apellidos": "Pérez"
+    },
+    {
+      "Id": 2,
+      "TrabajadorId": 1,
+      "Cedula": "V11111112",
+      "Nombres": "José",
+      "Apellidos": "Pérez"
+    },
+    {
+      "Id": 3,
+      "TrabajadorId": 1,
+      "Cedula": "V11111113",
+      "Nombres": "Lucía",
+      "Apellidos": "Pérez"
+    },
+    {
+      "Id": 4,
+      "TrabajadorId": 1,
+      "Cedula": "V11111114",
+      "Nombres": "Miguel",
+      "Apellidos": "Pérez"
+    }
+  ]
+}

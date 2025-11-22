@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- IDs de marcador de posición (placeholder) utilizados para almacenar datos en los tags de las RadioButtons.
+         El método setTag(int key, Object tag) requiere que 'key' sea un ID de recurso único. -->
+    <item name="tag_trabajador_id" type="id" />
+    <item name="tag_familiar_id" type="id" />
+</resources>

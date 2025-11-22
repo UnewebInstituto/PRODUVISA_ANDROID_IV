@@ -1,0 +1,36 @@
+Este error se debe a una regla de Android muy específica cuando se usan **tags (etiquetas)** en las vistas (`View`).
+
+-----
+
+## 🛑 Análisis del Error de `cannot find symbol`
+
+El error:
+
+```
+selectedId = (int) checkedRadioButton.getTag(R.id.tag_trabajador_id);
+symbol: variable tag_trabajador_id
+location: class id
+```
+
+**La Causa:**
+
+En Android, cuando usas el método `view.setTag(int key, Object tag)` o `view.getTag(int key)` para almacenar datos personalizados en una vista (como hiciste en `SeleccionActivity` para guardar el ID del trabajador/familiar), el argumento `key` **debe ser un ID de recurso válido** (un entero único) que exista en la clase `R.java`.
+
+Los IDs `R.id.tag_trabajador_id` y `R.id.tag_familiar_id` fueron creados en el código Java:
+
+  * `rbTrabajador.setTag(R.id.tag_trabajador_id, ...)`
+  * `rbTrabajador.setTag(R.id.tag_familiar_id, ...)`
+
+Pero como estos IDs no corresponden a ningún elemento visible en tus archivos de *layout* (`activity_bienvenida.xml`, etc.), el compilador no los genera automáticamente, causando el error de "símbolo no encontrado".
+
+-----
+
+## ✅ Solución: Definir IDs de Recurso Placeholders
+
+La solución es crear un archivo XML dedicado en la carpeta `res/values` para declarar estos IDs de marcador de posición (`placeholder`) explícitamente. Esto garantiza que se añadan correctamente a la clase `R.id`.
+
+A continuación, genero el archivo `custom_ids.xml` que debes crear en la carpeta **`app/src/main/res/values/`**:
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+Una vez que añadas este archivo y sincronices tu proyecto (o lo reconstruyas), el compilador encontrará `R.id.tag_trabajador_id` y `R.id.tag_familiar_id`, resolviendo el error.

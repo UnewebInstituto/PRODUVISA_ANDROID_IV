@@ -1,0 +1,89 @@
+Asume el rol de experto en android studio con java y api restfull para Visual Studio y
+ASP.NET MVC 4 Web application
+A fin de producir una aplicación que se integre a las siguientes estructuras de mensajes, manejando layout, archivos de configuración, preguntas y permisos de aplicación:
+En la primera envia por GET el número de cedula usando la siguiente url:
+api/Emergencias/Trabajador/{cedula}
+Por ejemplo:
+https://localhost:44338/api/Emergencias/Trabajador/V12345678
+La respuesta contendrá los datos del trabajador así como la de sus familiares, 
+por ejemplo:
+{
+  "Id": 1,
+  "Cedula": "V12345678",
+  "Nombres": "Carlos",
+  "Apellidos": "Pérez",
+  "CorreoElectronico": "carlos.perez@example.com",
+  "Telefono": "04141234567",
+  "Familiares": [
+    {
+      "Id": 1,
+      "TrabajadorId": 1,
+      "Cedula": "V11111111",
+      "Nombres": "Ana",
+      "Apellidos": "Pérez"
+    },
+    {
+      "Id": 2,
+      "TrabajadorId": 1,
+      "Cedula": "V11111112",
+      "Nombres": "José",
+      "Apellidos": "Pérez"
+    },
+    {
+      "Id": 3,
+      "TrabajadorId": 1,
+      "Cedula": "V11111113",
+      "Nombres": "Lucía",
+      "Apellidos": "Pérez"
+    },
+    {
+      "Id": 4,
+      "TrabajadorId": 1,
+      "Cedula": "V11111114",
+      "Nombres": "Miguel",
+      "Apellidos": "Pérez"
+    }
+  ]
+}
+
+En caso de no encontrarse el número de cédula del trabajador, se recibirá 
+un mensaje como el siguiente:
+{"Message":"Trabajador con cédula V1 no encontrado."}
+
+Vamos a tener en cuenta la secuencia de actividades de la aplicación Android:
+Se deben definir los layouts,asi como los demás componentes requeridos a los efectos de procesar el flujo de la aplicación en los siguiente términos:
+La primera actividad debe dar la bienvenida a la "Aplicación de Emergencias de PRODUVISA"
+y solicitar el ingreso del número de la cédula de identidad del trabajador, sugiriendo que el formato del dato a ingresar debe ser (marca de agua) "V12345678", el título de la aplicación así como la solicitud del dato deben aparecer lo mejor centrados y con el tamaño de letra adecuados para que sea bien legible. Debe exitir un botón que diga "ENVIAR", el cual dispará la acción.
+En ese momento se invoca el llamado al endpoint, a la respuesta recibida, se debe efecttuar el tratamiento adecuado:
+Si hubo error al introducir la cédula de identidad, se mostrará un mensaje informando el error,
+que corresponde a la respuesta recibida del endpoint, por ejemplo:
+{"Message":"Trabajador con cédula V1 no encontrado."}
+Por el contrario si son recibidos los datos del trabajador así como la de sus familiares (si posee registrados), la respuesta contendrá las cédulas nombres y apellidos de los familires y trabajador,
+entonces se debe mostrar las cedulas, nombres y apellidos del trabajador y familiar cada uno no un radio botón al comienzo de sus datos, para permitir la selección de sólo 1, en esta misma actividad se debe mostrar el botón "ENVIAR", lo cual llevará a una pantalla de actividad donde se mostrarán los datos de
+la persona seleccionada, así como un custionario con las siguientes preguntas:
+1-¿Hay un sangrado abundante o incontrolable?
+2-¿La persona ha tenido una convulsión?
+3-¿Sufre de dolor de pecho súbito y opresivo?
+4-¿Muestra signos de una reacción alérgica grave?
+5-¿La persona es incapaz de mover un lado de su cuerpo?
+ Cuyas respuestas se efectúan mediante radio button, cuyas opciones son "SI" o "NO", por omisión todas las respuesta están en "NO". La vista de esta actividad, debe incluir un titulo que invite a responder a las preguntas y al final debe haber un botón "ENVIAR", el cual se debe oprimir si todas, las repuesta son "NO", en caso de que una repuesta sea "SI", esta acción dispará una llamada de emergencias, al número que se encuentre registrado en la aplicación por ejemplo "+584142886735". En ambos casos, bien sea botón "ENVIAR" o selección "SI", se efectuará el llamado al endpoint por POST con la siguiente url:
+
+https://localhost:44338/api/Emergencias/Incidencia
+
+Manejando la siguiente estructura de mensaje:
+{
+    "TrabajadorId": 3,
+    "FamiliarId": null,
+    "Pregunta1": true,
+    "Pregunta2": false,
+    "Pregunta3": false,
+    "Pregunta4": false,
+    "Pregunta5": true
+}
+
+Donde "TrabajadorId" y "FamiliarId", son los valores recibidos "id", recibidos del endpoint 
+api/Emergencias/Trabajador/{cedula}
+
+ Si el usuario deja todas en "NO", el valor de los campos Pregunta1, Pregunta2, Pregunta3, Pregunta4 y Pregunta5, se registrarán por omisión en "false", mientras que si hay alguna afirmativa se registrará en "true".
+ El mensaje a mostrar por la actividad de aplicación en caso de ser todas las respuestas negativas, será "Servicio médico, se pondrá en contacto con usted, a fin de concertar chequeo de rutina". En caso de haber sido al menos una respueta afirmativa, se debe reintentar la llamada hasta obtener respuesta, una vez concluida, la llamada se mostrará mensaje de despedida indicando "Gracias por usar la aplicación de Emergencias de PRODUVISA, estamos para contrinuir a tu binestar y el de tu familia".  
+

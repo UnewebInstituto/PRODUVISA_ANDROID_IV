@@ -1,0 +1,39 @@
+¡Absolutamente! Es una observación muy astuta.
+
+Usted no tenía el archivo `RetrofitClient.java` porque lo generé en mi respuesta anterior como la **Solución 1** para abordar el nuevo error `unexpected end of stream`. Este archivo es crucial porque **crea un cliente HTTP personalizado (OkHttpClient) que tiene tiempos de espera (timeouts) más largos**, lo cual es la solución más común para ese error en conexiones de desarrollo.
+
+**Sí, debe incluirlo.** Aquí tiene el procedimiento paso a paso para añadirlo y aplicarlo en su proyecto.
+
+---
+
+### Procedimiento de Implementación del Cliente Retrofit
+
+#### Paso 1: Crear el Archivo `RetrofitClient.java`
+
+Basado en la estructura de su proyecto, el archivo debe ir dentro del paquete `api`.
+
+1.  En Android Studio, navegue hasta:
+    `app/src/main/java/com.produvisa.emergencias/api`
+2.  Haga clic derecho en el paquete **`api`**, seleccione **`New`** -> **`Java Class`**.
+3.  Nombre la clase como **`RetrofitClient`**.
+
+A continuación, copiará el siguiente código completo dentro de ese nuevo archivo. Este código configura los *timeouts* a 60 segundos.
+
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+#### Paso 2: Verificar la URL Base en `AppConfig.java` (CRÍTICO)
+
+Su error actual se produjo usando `http://10.0.2.2:5000/...`. Este es el protocolo y puerto correcto. Asegúrese de que su archivo `AppConfig.java` esté usando **HTTP** y el puerto **5000** (el puerto HTTP que mostró en su API de Visual Studio), y no la versión HTTPS (44338) o el puerto 52753.
+
+
+http://googleusercontent.com/immersive_entry_chip/1
+
+#### Resumen Final:
+
+1.  Creó el archivo `RetrofitClient.java` con *timeouts* extendidos.
+2.  Confirmó que `AppConfig.API_BASE_URL` utiliza **HTTP** y el puerto **5000**.
+3.  Actualizó su actividad para usar el nuevo `RetrofitClient`.
+4.  **No olvide reiniciar su API en Visual Studio** después de estos cambios y vuelva a probar en el emulador.
+
+Con estos cambios, el error `unexpected end of stream` debería resolverse, permitiendo que la respuesta JSON se lea completamente.

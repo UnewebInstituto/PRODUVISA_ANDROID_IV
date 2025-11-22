@@ -1,0 +1,130 @@
+El mensaje de error **"Fallo de conexión o certificado java.security.cert.CertPathValidatorException..."** es un error de seguridad que ocurre cuando la aplicación Android intenta conectarse a un servidor a través de **HTTPS**, pero no confía en el certificado SSL/TLS proporcionado por ese servidor.
+
+Este es un problema **extremadamente común** cuando se usa un emulador de Android (o un dispositivo físico) para conectarse a un servidor de desarrollo local (como tu API ASP.NET en `https://10.0.2.2:44338/`).
+
+---
+
+## 🛑 Causas del Error `CertPathValidatorException`
+
+El error se debe a que tu API local probablemente está utilizando un **certificado autofirmado** (el que crea Visual Studio por defecto para `localhost`).
+
+1.  **Certificado No Confiable:** Los certificados autofirmados son válidos para el desarrollador en su máquina, pero no están emitidos por una Autoridad de Certificación (CA) reconocida globalmente (como Google, Let's Encrypt, etc.).
+2.  **Android No Confía:** Por defecto, el sistema Android (especialmente las versiones más recientes) solo confía en certificados emitidos por CAs conocidas. Como tu certificado de `localhost` no está en esa lista, la conexión HTTPS es rechazada por ser considerada insegura.
+
+## ✅ Medidas de Corrección
+
+Hay dos soluciones principales para este problema de conectividad en entornos de desarrollo: la solución segura (recomendada) y la solución rápida (temporal).
+
+### Opción 1: Solución Rápida y Temporal (Solo para Desarrollo)
+
+La forma más sencilla de saltarse la verificación de certificados es **cambiar el protocolo de HTTPS a HTTP** en el archivo `AppConfig.java`, ya que HTTP no requiere certificados.
+
+**Acción Requerida:**
+
+Modifica la URL base en el archivo `AppConfig.java` para usar **`http`** en lugar de **`https`**.
+
+Voy a actualizar el archivo `AppConfig.java`.
+
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+**Nota Importante:**
+
+* **Asegúrate de que tu API ASP.NET Web esté escuchando en el puerto 44338 para el protocolo HTTP** (o cambia el puerto en la URL base si es diferente en tu configuración de `launchSettings.json`).
+* Si tu API solo escucha HTTPS, esta solución no funcionará, y debes pasar a la Opción 2.
+
+### Opción 2: Solución Segura (Configuración de Red de Confianza)
+
+Esta es la mejor práctica si **debes** usar HTTPS localmente. Consiste en indicarle a la aplicación Android que confíe en los certificados autofirmados para el dominio de desarrollo.
+
+**Acciones Requeridas:**
+
+#### A. Crear el Archivo de Configuración de Red
+
+Debes crear un archivo XML llamado `network_security_config.xml` en la carpeta `app/src/main/res/xml/`. Este archivo permite el tráfico no cifrado y configura dominios de confianza para el desarrollo.
+
+
+http://googleusercontent.com/immersive_entry_chip/1
+
+#### B. Referenciar la Configuración en `AndroidManifest.xml`
+
+Debes informar a Android que use esta nueva configuración de seguridad en la etiqueta `<application>`.
+
+Voy a actualizar el archivo `AndroidManifest.xml`.
+
+
+http://googleusercontent.com/immersive_entry_chip/2
+
+**Recomendación:** Intenta primero la **Opción 1** (cambiar a `http` en `AppConfig.java`). Si tu API Web está configurada para redirigir forzosamente a HTTPS, necesitarás la **Opción 2**.
+
+
+
+/*********************************
+
+        I M P O R T A N T E
+
+**********************************/
+
+Ese error, **"Fallo de conexión o certificado Connection Reset"**, es una variación del problema de red, y es común cuando se intenta la Opción 1 (cambiar a HTTP) pero la configuración del servidor no está lista.
+
+-----
+
+## 🛑 Análisis del Error "Connection Reset"
+
+El error `Connection Reset` (o `java.net.SocketException: connection reset`) en Java/Android ocurre cuando la aplicación Android abre una conexión con el servidor, pero el servidor la **cierra abruptamente** y de forma inesperada.
+
+Esto sucede típicamente porque:
+
+1.  **La URL de HTTP es Incorrecta:** La aplicación está enviando una solicitud a `http://10.0.2.2:44338/` (HTTP) pero tu API ASP.NET solo está configurada para escuchar en **HTTPS** en ese puerto (`44338`).
+      * **Contexto de .NET:** Por defecto, los proyectos Web API recientes configuran el puerto **443xx** para **HTTPS** y un puerto diferente (ej., **5000** o **5001**) para **HTTP**. Si le pides HTTP al puerto HTTPS, el servidor te "resetea" la conexión.
+2.  **Redirección Forzosa:** El servidor recibe la solicitud HTTP y, antes de poder responder o redirigir, la configuración de seguridad fuerza un cierre de la conexión.
+
+## ✅ Pasos de Corrección y Verificación
+
+Dado que la Opción 1 falló, debemos verificar la configuración de tu API en Visual Studio y realizar una de estas dos acciones:
+
+### 1\. **Acción Recomendada:** Usar el Puerto de HTTP Correcto
+
+La forma más rápida de resolver el `Connection Reset` es asegurarte de que estás usando el puerto de **HTTP** (no HTTPS) de tu API.
+
+**Pasos de Verificación en Visual Studio (Tu API Web):**
+
+1.  Abre tu proyecto **ApiEmergencias** en Visual Studio.
+
+2.  Busca el archivo `Properties/launchSettings.json`.
+
+3.  Dentro de este archivo, busca la configuración de la URL. Verás dos secciones de URL, una para `http` y otra para `https`:
+
+    ```json
+    "ApiEmergencias": {
+        "commandName": "Project",
+        "launchBrowser": true,
+        "applicationUrl": "https://localhost:44338;http://localhost:5000", <-- ¡Busca el puerto HTTP aquí!
+        "environmentVariables": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        }
+      }
+    ```
+
+**Instrucción:**
+
+Si encuentras que el puerto HTTP es, por ejemplo, **`5000`**, debes actualizar el `AppConfig.java` con ese nuevo puerto.
+
+Voy a actualizar `AppConfig.java` usando el puerto `5000` como un ejemplo común, pero **debes verificar si este es el puerto correcto en tu `launchSettings.json`**.
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+### 2\. **Opción Alternativa:** Si el Servidor No Cierra la Conexión (Revisión de `network_security_config`)
+
+Si la corrección anterior no funciona, es posible que, a pesar de usar HTTP, Android aún esté rechazando la conexión debido a alguna política de seguridad muy estricta, o que la IP 10.0.2.2 no esté permitida para tráfico no seguro en tu versión de Android.
+
+Aunque ya intentaste la Opción 1 (HTTP), para prevenir futuros problemas de seguridad en el emulador, vamos a **descomentar la línea que permite explícitamente el tráfico HTTP no cifrado** en el archivo `network_security_config.xml`.
+
+http://googleusercontent.com/immersive_entry_chip/1
+
+**Pasos a seguir:**
+
+1.  **Revisa `launchSettings.json`** en tu API para encontrar el puerto **HTTP** correcto.
+2.  **Actualiza `AppConfig.java`** con `http://10.0.2.2:[PUERTO_HTTP]`. (Usé 5000 como ejemplo).
+3.  **Asegúrate de que `network_security_config.xml` tenga el `<base-config...>` descomentado** (como te lo muestro arriba).
+4.  **Reconstruye y ejecuta** la aplicación Android.

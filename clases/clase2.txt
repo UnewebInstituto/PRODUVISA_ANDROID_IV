@@ -1,0 +1,22 @@
+New Project
+Web
+ASP.NET MVC 4 Web Application
+Select template Web API
+
+
+<connectionStrings>
+    <add name="SqlConn"
+      connectionString="Data Source=SRVPDVPROD;Initial Catalog=emergencias;User ID=su;Password=artisan"
+      providerName="System.Data.SqlClient" />
+    </connectionStrings>
+
+
+api/Emergencias/Trabajador/{cedula}
+
+api/Emergencias/Incidencia
+
+https://localhost:44338/api/Emergencias/Trabajador/V12345678
+https://localhost:44338/api/Emergencias/Trabajador/V98765432
+https://localhost:44338/api/Emergencias/Trabajador/V45678912
+
+https://localhost:44338/api/Emergencias/Incidencia

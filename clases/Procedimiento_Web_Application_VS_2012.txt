@@ -1,0 +1,137 @@
+
+Aquí tienes el procedimiento equivalente para crear un proyecto **ASP.NET Web API** en **Visual Basic** usando Visual Studio 2012.
+
+-----
+
+## 🛠️ Procedimiento en Visual Studio 2012
+
+En Visual Studio 2012, no seleccionas "Web API" directamente en el primer asistente; primero creas el proyecto base (vacío o de MVC) y luego añades la estructura de Web API.
+
+### 1\. 🆕 Iniciar la Creación del Proyecto
+
+1.  Abre Visual Studio 2012 y ve a **File** \> **New** \> **Project...** (Archivo \> Nuevo \> Proyecto...).
+2.  En el panel izquierdo, bajo **Templates** (Plantillas), expande **Visual Basic** \> **Web**.
+3.  En la lista central, selecciona la plantilla **ASP.NET Empty Web Application** (Aplicación web vacía ASP.NET).
+4.  Asigna el **Name** (ej. `EmergenciasAPI`), elige la **Location** y haz clic en **OK**.
+
+### 2\. ⚙️ Convertir a Web API (mediante NuGet)
+
+Una vez que el proyecto vacío se ha creado, debes instalar las bibliotecas necesarias para Web API (que en versiones posteriores viene preinstalado):
+
+1.  Ve a **Tools** \> **NuGet Package Manager** \> **Package Manager Console** (Herramientas \> Administrador de paquetes NuGet \> Consola del administrador de paquetes).
+
+2.  Asegúrate de que el **Default project** (Proyecto predeterminado) esté configurado a tu nuevo proyecto (`EmergenciasAPI`).
+
+3.  Ejecuta el siguiente comando para instalar el paquete principal de ASP.NET Web API:
+
+    ```powershell
+    Install-Package Microsoft.AspNet.WebApi.Core -ProjectName EmergenciasAPI
+    
+    ```
+
+    *Opcionalmente, puedes instalar también el paquete de "Scaffolding" (esqueleto) de Web API:*
+
+    ```powershell
+    Install-Package Microsoft.AspNet.WebApi.WebHost -ProjectName EmergenciasAPI
+    ```
+
+### 3\. 📝 Configuración y Estructura
+
+1.  **Habilitar el enrutamiento:** Abre el archivo **`Global.asax`** y en el método `Application_Start` añade la configuración de las rutas de Web API.
+
+    *Este paso es crucial para que la aplicación reconozca las rutas de tu API.*
+
+2.  **Agregar el Controlador:**
+
+      * En el **Solution Explorer** (Explorador de soluciones), haz clic derecho sobre el proyecto.
+      * Selecciona **Add** \> **New Folder** (Agregar \> Nueva Carpeta) y nómbrala **`Controllers`**.
+      * Haz clic derecho sobre la carpeta **`Controllers`** y selecciona **Add** \> **Class...** (Agregar \> Clase...).
+      * Crea una nueva clase (ej. `TrabajadoresController.vb`) y asegúrate de que **herede de `ApiController`** para que funcione como un *Controller* de Web API.
+
+    <!-- end list -->
+
+    ```vb.net
+    Public Class TrabajadoresController
+        Inherits System.Web.Http.ApiController
+
+        ' Aquí van tus métodos HTTP (GET, POST, etc.)
+        Public Function GetValue() As String
+            Return "API de Emergencias en VB.NET funcionando."
+        End Function
+
+    End Class
+    ```
+
+El proyecto ya estará configurado para funcionar como un API RESTful bajo el *framework* de Web API en Visual Basic.
+
+
+
+/********************************/
+
+
+Tiene razón, en la imagen que anexó, la opción directa **"NuGet Package Manager"** no aparece en la ruta que mencioné.
+
+En su versión de Visual Studio (que parece ser 2012, o una configuración similar), el Administrador de Paquetes NuGet se encuentra dentro de la opción **Library Package Manager**.
+
+## 💡 Sugerencia para acceder a la Consola NuGet
+
+El procedimiento correcto basado en su imagen es:
+
+1.  Haga clic en el menú **TOOLS** (Herramientas).
+2.  Seleccione **Library Package Manager** (Administrador de Paquetes de Librerías).
+3.  En el submenú que se despliega (como se ve a la derecha en su imagen), seleccione **Package Manager Console** (Consola del Administrador de Paquetes).
+
+Esta acción lo llevará al panel donde puede ejecutar el comando `Install-Package` para añadir las dependencias de Web API, tal como se describió en el paso anterior.
+
+
+/*************************************/
+
+El error que se muestra en la **Package Manager Console** es un problema común en versiones más antiguas de Visual Studio, como la 2012, debido a una desactualización en el sistema de gestión de paquetes.
+
+-----
+
+## 🛑 Causas del Error
+
+El mensaje principal es claro:
+
+> **The schema version of 'Microsoft.AspNet.WebApi.Client' is incompatible with version 2.0.30625.9003 of NuGet. Please upgrade NuGet to the latest version...**
+
+La causa del error es una **incompatibilidad de versión** entre:
+
+1.  **El Paquete que intentas instalar (`Microsoft.AspNet.WebApi.Core`):** Este paquete (y sus dependencias como `Microsoft.AspNet.WebApi.Client`) fue creado o actualizado con un **esquema de metadatos** de NuGet más reciente.
+2.  **La Versión de NuGet en tu Visual Studio 2012 (2.0.30625.9003):** Esta versión de NuGet es demasiado antigua y no puede leer o procesar correctamente el esquema de metadatos de los paquetes modernos.
+
+En esencia, la herramienta (NuGet) está obsoleta para los paquetes que deseas usar.
+
+-----
+
+## ✅ Correctivos
+
+El único correctivo es **actualizar el Administrador de Paquetes NuGet** en tu instalación de Visual Studio 2012.
+
+### 1\. 🌐 Descargar la Última Versión de NuGet para VS 2012
+
+1.  Visita la página oficial de descargas de NuGet (o busca "NuGet Visual Studio 2012").
+2.  Deberías buscar la versión más reciente del **"NuGet Package Manager Extension"** para Visual Studio 2012 (generalmente un archivo `.vsix`).
+
+### 2\. 🔌 Instalar la Extensión
+
+1.  **Cierra todas las instancias de Visual Studio 2012.**
+2.  **Ejecuta el archivo `.vsix`** que descargaste. Esto iniciará el instalador de la extensión de Visual Studio.
+3.  Sigue las indicaciones para instalar la extensión **NuGet Package Manager**.
+
+### 3\. 🔄 Reintentar el Comando
+
+1.  **Reinicia Visual Studio 2012** y abre tu proyecto `EmergenciasAPI`.
+
+2.  Abre la **Package Manager Console**.
+
+3.  Vuelve a ejecutar el comando:
+
+    ```powershell
+    Install-Package Microsoft.AspNet.WebApi.Core -ProjectName EmergenciasAPI
+    ```
+
+Tras la actualización de NuGet, el sistema podrá procesar correctamente los metadatos del paquete Web API e instalarlo sin problemas.
+
+¿Deseas que te ayude a encontrar el enlace de descarga oficial para el NuGet Package Manager de Visual Studio 2012?

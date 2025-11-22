@@ -1,0 +1,216 @@
+El proceso para actualizar el **Administrador de Paquetes NuGet** en **Visual Studio 2012** se realiza mediante el sistema de **Extensiones y Actualizaciones** del propio entorno.
+
+Aquí tienes el procedimiento paso a paso:
+
+---
+
+## 🛠️ Pasos para Actualizar NuGet en Visual Studio 2012
+
+1.  **Abrir el Administrador de Extensiones:**
+    * En Visual Studio 2012, haz clic en el menú **TOOLS** (Herramientas).
+    * Selecciona **Extensions and Updates...** (Extensiones y Actualizaciones...).
+
+2.  **Buscar Actualizaciones:**
+    * En la ventana de *Extensiones y Actualizaciones*, haz clic en la sección **Updates** (Actualizaciones) en el panel izquierdo.
+    * Selecciona **Visual Studio Gallery** (Galería de Visual Studio) dentro de la sección de actualizaciones.
+
+3.  **Localizar y Actualizar NuGet:**
+    * Busca la extensión llamada **"NuGet Package Manager"** (o similar, como *NuGet Package Manager for Visual Studio 2012*).
+    * Si hay una versión más reciente disponible, aparecerá un botón de **Update** (Actualizar) o **Download** (Descargar). Haz clic en él.
+
+4.  **Instalar la Actualización:**
+    * Una vez que la descarga esté completa, se te pedirá que **cierres Visual Studio** para que el instalador de la extensión se ejecute automáticamente.
+    * Sigue las instrucciones del instalador (VSIX Installer) para completar la actualización del Administrador de Paquetes NuGet.
+
+5.  **Verificar y Reintentar:**
+    * **Reinicia Visual Studio 2012** y abre tu proyecto.
+    * Vuelve a la **Package Manager Console** e intenta ejecutar el comando `Install-Package` nuevamente. El error de incompatibilidad debería haberse resuelto.
+
+
+
+    /****************************************/
+
+    Entiendo. La imagen muestra que **Visual Studio 2012 no pudo conectarse al servidor de actualizaciones** (la Visual Studio Gallery). Por lo tanto, no puede mostrarte la lista de extensiones ni las actualizaciones disponibles (incluida la de NuGet).
+
+El error que aparece indica que el punto final (`marketplace.visualstudio.com/.../VS2012/Extension.svc`) probablemente ya no está activo o accesible, ya que **Microsoft ha descontinuado el soporte** para VS 2012 y muchos de esos servicios en línea han sido cerrados.
+
+-----
+
+## 🛑 Correctivo Alternativo (Instalación Manual)
+
+Dado que la actualización a través de "Extensions and Updates" ha fallado, la única manera de actualizar NuGet en Visual Studio 2012 es mediante la **descarga e instalación manual del archivo VSIX** (Visual Studio Extension).
+
+### 1\. ⬇️ Descargar la Extensión NuGet
+
+La versión final del **NuGet Package Manager** compatible con Visual Studio 2012 es la **2.8.6**.
+
+1.  Usa tu navegador web para buscar la descarga oficial de la extensión. El nombre exacto que debes buscar es:
+    > **"NuGet Package Manager for Visual Studio 2012 VSIX"**
+2.  Busca un enlace confiable (como los archivos históricos de NuGet o Visual Studio Gallery si aún están disponibles) que te proporcione el archivo **`.vsix`** para la versión 2.8.6.
+
+### 2\. 🔌 Instalar la Extensión
+
+1.  **Cierra todas las instancias de Visual Studio 2012** que estén abiertas.
+2.  **Ejecuta el archivo `.vsix`** que acabas de descargar (generalmente haciendo doble clic).
+3.  El instalador de la extensión de Visual Studio (VSIX Installer) se iniciará. Sigue los pasos para instalar o actualizar el **NuGet Package Manager**.
+
+### 3\. 🔄 Reintentar la Instalación del Paquete Web API
+
+1.  **Reinicia Visual Studio 2012**.
+
+2.  Abre tu proyecto `EmergenciasAPI`.
+
+3.  Vuelve a la **Package Manager Console** (Herramientas \> Library Package Manager \> Package Manager Console).
+
+4.  Ejecuta el comando para instalar la librería de Web API:
+
+    ```powershell
+    Install-Package Microsoft.AspNet.WebApi.Core -ProjectName EmergenciasAPI
+    ```
+
+Este método manual bypassa (evita) la necesidad de conectarse al servidor de Microsoft que te está dando el error en la imagen.
+
+/***********************************/
+UBICACIÓN DEL ARCHIVO *.VSIX
+
+https://marketplace.visualstudio.com/items?itemName=NuGetTeam.NuGetPackageManager
+
+/***********************************/
+
+¡Excelente que haya logrado actualizar NuGet\! El error que está obteniendo ahora, aunque frustrante, indica que el problema inicial de compatibilidad de la extensión NuGet ya fue resuelto.
+
+El nuevo error: `'Microsoft.AspNet.WebApi.Client' already has a dependency defined for 'Newtonsoft.Json.Bson'` es un **conflicto de dependencias** común en proyectos de .NET Framework más antiguos (como el suyo en VS 2012) que puede resolverse forzando la reinstalación o limpieza de los paquetes.
+
+-----
+
+## 🛑 Causas del Error
+
+Este error suele ocurrir por las siguientes razones:
+
+1.  **Conflicto de Dependencias:** El paquete **`Microsoft.AspNet.WebApi.Core`** tiene una dependencia en **`Microsoft.AspNet.WebApi.Client`**, el cual, a su vez, depende de una versión específica de **`Newtonsoft.Json`** y **`Newtonsoft.Json.Bson`**. El sistema NuGet puede estar encontrando archivos o referencias residuales de estos paquetes en el proyecto o en la caché con versiones incompatibles con las que el instalador de Web API intenta usar.
+2.  **Problemas de Caché o Metadata:** A pesar de haber actualizado la extensión, la caché de paquetes de NuGet o los metadatos de su proyecto `EmergenciasAPI` (el archivo `packages.config`) pueden estar corruptos o desactualizados.
+
+-----
+
+## ✅ Correctivo: Limpieza y Reinstalación Forzada
+
+El mejor enfoque en este caso es realizar una limpieza completa de los paquetes NuGet en el proyecto antes de intentar instalar la librería principal.
+
+### 1\. 🗑️ Limpiar el Directorio de Paquetes
+
+Primero, elimine manualmente cualquier rastro de paquetes ya instalados que puedan estar causando el conflicto:
+
+1.  En el **Explorador de Soluciones (Solution Explorer)**, haga clic derecho en su Solución (el nodo superior).
+2.  Seleccione **"Restore NuGet Packages"** si la opción existe (puede no existir en VS 2012).
+3.  **Vaya directamente a la carpeta de su solución** en el explorador de archivos (`.../visual studio 2012/Projects/EmergenciasAPI`).
+4.  Busque y **elimine completamente la carpeta llamada `packages`** (si existe).
+
+### 2\. 🔄 Reinstalación Forzada (Método Recomendado)
+
+Ahora, intente instalar de nuevo, pero usando un comando que fuerce la reinstalación de todas las dependencias:
+
+Abra la **Package Manager Console** y ejecute el siguiente comando (sustituyendo el comando de `Install-Package` por `Update-Package` con el *flag* `-reinstall`):
+
+```powershell
+Update-Package Microsoft.AspNet.WebApi.Core -Reinstall -ProjectName EmergenciasAPI
+```
+
+  * **`Update-Package`**: Intenta actualizar o reinstalar el paquete.
+  * **`-Reinstall`**: Fuerza a NuGet a desinstalar y reinstalar el paquete, lo cual a menudo resuelve conflictos de dependencias como el de `Newtonsoft.Json.Bson`.
+
+### 3\. 📝 Alternativa (Si el Paso 2 Falla)
+
+Si el error persiste, pruebe a instalar la dependencia más problemática por separado, usando el parámetro `-IgnoreDependencies`:
+
+1.  **Ejecute (con cuidado):**
+    ```powershell
+    Install-Package Microsoft.AspNet.WebApi.Core -IgnoreDependencies -ProjectName EmergenciasAPI
+    ```
+2.  Luego, instale la dependencia principal de `Newtonsoft.Json` por separado para asegurarse de que tiene una versión compatible:
+    ```powershell
+    Install-Package Newtonsoft.Json -ProjectName EmergenciasAPI
+    ```
+
+El uso de `-Reinstall` en el primer método debería ser suficiente para resolver este conflicto específico de dependencias en proyectos antiguos.
+
+¿Podría intentar el método de **`Update-Package -Reinstall`** y decirme si funciona?
+
+/****************************/
+
+¡Hola de nuevo\! Es un error clásico de versiones y es una buena señal, ya que confirma que tu versión de NuGet **sí se actualizó** a la **2.8.60318.667**, pero ahora el problema es la **compatibilidad del paquete de destino** con tu IDE.
+
+-----
+
+## 🛑 Causa del Error
+
+El error `'Newtonsoft.Json 13.0.4' package requires NuGet client version '2.12' or above...` tiene dos causas principales:
+
+1.  **Versión del Cliente NuGet (Tu VS 2012):** La versión final de NuGet que se pudo instalar en Visual Studio 2012 fue la **2.8.x**.
+2.  **Versión del Paquete (Newtonsoft.Json 13.0.4):** El repositorio está intentando descargar la **última** versión de `Newtonsoft.Json` (v13.0.4), pero esta versión requiere un cliente NuGet (`v2.12` o superior) que **nunca fue compatible con VS 2012**.
+
+**Conclusión:** Necesitas decirle a NuGet que no descargue la versión más reciente (v13.0.4), sino una **versión antigua que sea compatible** con tu entorno (VS 2012 / .NET Framework 4.0/4.5).
+
+-----
+
+## ✅ Correctivo: Especificar una Versión Compatible
+
+Debemos instalar manualmente una versión de `Newtonsoft.Json` que funcione con la versión **2.8.x** del cliente NuGet y con las librerías originales de **Web API** para .NET Framework 4.
+
+Una versión de `Newtonsoft.Json` que es muy estable y compatible con ASP.NET Web API en VS 2012 es la **6.0.4** o la **7.0.1**.
+
+Utilizaremos la versión **7.0.1** ya que es robusta:
+
+### 1\. Instalar la Versión Específica de Newtonsoft.Json
+
+Ejecuta el siguiente comando en la **Package Manager Console**:
+
+```powershell
+Install-Package Newtonsoft.Json -Version 7.0.1 -ProjectName EmergenciasAPI
+```
+
+### 2\. Reintentar la Instalación de Web API
+
+Una vez que `Newtonsoft.Json` esté instalado en una versión compatible, reintenta el comando original para instalar la librería central de Web API:
+
+```powershell
+Install-Package Microsoft.AspNet.WebApi.Core -ProjectName EmergenciasAPI
+```
+
+Al especificar la versión compatible de `Newtonsoft.Json` por adelantado, evitas el conflicto y permites que el paquete de Web API se instale correctamente en tu entorno antiguo.
+
+¿Te gustaría que intentes estos comandos y me digas el resultado?
+
+
+/*************************************/
+
+El error que estás recibiendo ahora, a pesar de haber intentado instalar una versión específica de Newtonsoft.Json, indica que la versión de Microsoft.AspNet.WebApi.Core que NuGet está intentando obtener requiere una versión de Microsoft.AspNet.WebApi.Client que, a su vez, ya tiene un conflicto interno de dependencias definido, específicamente con Newtonsoft.Json.Bson.
+
+Este conflicto ocurre porque estás instalando la versión más reciente de Microsoft.AspNet.WebApi.Core disponible en el feed de NuGet (que requiere Microsoft.AspNet.WebApi.Client (≥ 6.0.0)), y esta versión moderna está pensada para entornos de .NET Framework mucho más recientes que Visual Studio 2012 (que usa la versión 2.8.x de NuGet).
+
+🛑 Correctivo Final: Especificar Versiones Antiguas
+Para resolver este problema en tu entorno de Visual Studio 2012, debes forzar la instalación de las versiones antiguas y compatibles de los paquetes de Web API, no solo de Newtonsoft.Json.
+
+La versión de ASP.NET Web API que es compatible con tu cliente NuGet 2.8.x y .NET Framework 4.0/4.5 (el entorno de VS 2012) es la versión 5.2.3.
+
+1. 🗑️ Limpieza del Proyecto
+Antes de cualquier cosa, asegúrate de que no queden referencias residuales:
+
+Elimina la carpeta packages de tu solución (si existe).
+
+Elimina el archivo packages.config del proyecto EmergenciasAPI.
+
+2. 📝 Instalación de Paquetes Compatibles (Web API 5.2.3)
+Instala el paquete principal de Web API especificando la última versión que es totalmente compatible con el cliente NuGet 2.8.x:
+
+PowerShell
+
+Install-Package Microsoft.AspNet.WebApi -Version 5.2.3 -ProjectName EmergenciasAPI
+Explicación:
+
+Al instalar Microsoft.AspNet.WebApi (en lugar de solo Microsoft.AspNet.WebApi.Core), se instala el paquete meta que incluye todas las dependencias necesarias (Core, Client, WebHost) en sus versiones compatibles (generalmente la misma 5.2.3 o anterior).
+
+Al especificar el -Version 5.2.3, evitas que NuGet intente descargar las versiones 6.0.0 o superiores, que son las que te causan el conflicto con Newtonsoft.Json.Bson.
+
+Esta versión 5.2.3 de Web API debería resolver automáticamente las dependencias internas de Newtonsoft.Json a una versión compatible (generalmente 6.0.4 o 7.0.1), eliminando el conflicto.
+
+Por favor, intenta este comando de instalación con la versión especificada.

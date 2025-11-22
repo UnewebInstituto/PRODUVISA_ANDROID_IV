@@ -1,0 +1,142 @@
+¡Excelente! Asumo mi doble rol como Experto en Android Studio (Java) y RESTful API (ASP.NET Web API).
+
+El objetivo es crear una aplicación Android que consume los dos endpoints que has estado desarrollando y que implementa el flujo de emergencia, incluyendo el cuestionario y la llamada de auxilio.
+
+Para lograr esto, generaré los siguientes archivos clave de Android Studio:
+
+AndroidManifest.xml: Para declarar permisos y actividades.
+
+activity_bienvenida.xml: El layout de la pantalla inicial de bienvenida y solicitud de cédula (Actividad 1).
+
+BienvenidaActivity.java: La lógica para capturar la cédula y realizar la llamada GET.
+
+activity_seleccion.xml: El layout para mostrar al trabajador y familiares con RadioButtons (Actividad 2).
+
+SeleccionActivity.java: La lógica para recibir los datos, mostrar las opciones, seleccionar una persona y pasar a la siguiente actividad.
+
+activity_cuestionario.xml: El layout de la pantalla del cuestionario con las 5 preguntas (Actividad 3).
+
+CuestionarioActivity.java: La lógica para el cuestionario, la llamada POST y la llamada telefónica.
+
+AppConfig.java: Clase para manejar la configuración fija (URL Base y Teléfono de Emergencia).
+
+Trabajador.java, Familiar.java, IncidenciaDto.java: Clases modelo (POJOs) para mapear los mensajes JSON.
+
+Comenzaremos con los archivos de configuración y los modelos de datos.
+
+1. Archivo de Configuración y Modelos (Java)
+Estos archivos definirán la URL base de tu API y cómo se mapean los datos JSON.
+Configuración de la Aplicación
+17 nov, 5:43
+Modelo Familiar
+17 nov, 5:43
+
+Abrir
+Modelo Trabajador Principal
+17 nov, 5:43
+
+Abrir
+Modelo DTO de Registro de Incidencia
+17 nov, 5:43
+
+Abrir
+
+2. Archivo de Configuración de Permisos (AndroidManifest.xml)
+Necesitamos los permisos de Internet (para la API REST) y de Llamadas Telefónicas (CALL_PHONE).
+Permisos y Actividades
+17 nov, 5:43
+
+Abrir
+
+3. Interfaces de Servicio (Retrofit)
+Usaremos Retrofit para gestionar las llamadas API. Necesitarás agregarlo al archivo build.gradle (app):
+
+implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+
+implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+
+Interfaz de Servicio API
+17 nov, 5:43
+
+Abrir
+4. Actividad 1: Bienvenida y Solicitud de Cédula
+Layout (activity_bienvenida.xml)
+Layout Bienvenida
+17 nov, 5:43
+
+Abrir
+
+Lógica (BienvenidaActivity.java)
+Lógica Bienvenida y GET
+17 nov, 5:43
+
+Abrir
+
+5. Actividad 2: Selección de Trabajador/Familiar
+Layout (activity_seleccion.xml)
+Layout Selección
+17 nov, 5:43
+
+Abrir
+
+Lógica (SeleccionActivity.java)
+Lógica Selección
+17 nov, 5:43
+
+Abrir
+
+6. Actividad 3: Cuestionario y POST
+Layout (activity_cuestionario.xml)
+Layout Cuestionario
+17 nov, 5:43
+
+Abrir
+
+Lógica (CuestionarioActivity.java)
+Lógica Cuestionario y POST
+17 nov, 5:43
+
+Abrir
+
+He generado todos los archivos necesarios para el flujo de tu aplicación Android.
+
+Resumen de la Solución:
+
+Configuración: AppConfig.java centraliza la URL base de tu API (usando 10.0.2.2 para el emulador) y el número de emergencia.
+
+Modelos: Se crearon modelos POJO (Trabajador, Familiar, IncidenciaDto) para el mapeo JSON.
+
+Permisos: Se agregaron permisos INTERNET y CALL_PHONE en AndroidManifest.xml.
+
+Flujo:
+
+BienvenidaActivity (GET): Solicita cédula, llama a api/Emergencias/Trabajador/{cedula}. Maneja el éxito y el error 404.
+
+SeleccionActivity: Muestra al trabajador y familiares en un RadioGroup. Pasa los IDs seleccionados a la siguiente actividad.
+
+CuestionarioActivity (POST y Llamada):
+
+Muestra las 5 preguntas críticas.
+
+Al presionar "ENVIAR", recopila las 5 respuestas Booleanas.
+
+Llama a api/Emergencias/Incidencia con el IncidenciaDto.
+
+Si alguna respuesta fue "SÍ", solicita el permiso CALL_PHONE y procede a la llamada de emergencia y el mensaje de despedida.
+
+Si todas son "NO", muestra el mensaje de chequeo de rutina y el mensaje de despedida.
+
+Pasos a Seguir en Android Studio:
+
+Crea la estructura de carpetas com.produvisa.emergencias, com.produvisa.emergencias.models, y com.produvisa.emergencias.api.
+
+Copia los archivos Java y XML a sus ubicaciones correspondientes.
+
+Añade las dependencias en build.gradle (app) para Retrofit y Gson:
+
+Gradle
+
+// Dentro de dependencies { ... }
+implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+4.  Asegúrate de que tu API de Visual

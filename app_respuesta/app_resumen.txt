@@ -1,0 +1,49 @@
+Resumen de la Solución:
+
+Configuración: AppConfig.java centraliza la URL base de tu API (usando 10.0.2.2 para el emulador) y el número de emergencia.
+
+Modelos: Se crearon modelos POJO (Trabajador, Familiar, IncidenciaDto) para el mapeo JSON.
+
+Permisos: Se agregaron permisos INTERNET y CALL_PHONE en AndroidManifest.xml.
+
+Flujo:
+
+BienvenidaActivity (GET): Solicita cédula, llama a api/Emergencias/Trabajador/{cedula}. Maneja el éxito y el error 404.
+
+SeleccionActivity: Muestra al trabajador y familiares en un RadioGroup. Pasa los IDs seleccionados a la siguiente actividad.
+
+CuestionarioActivity (POST y Llamada):
+
+Muestra las 5 preguntas críticas.
+
+Al presionar "ENVIAR", recopila las 5 respuestas Booleanas.
+
+Llama a api/Emergencias/Incidencia con el IncidenciaDto.
+
+Si alguna respuesta fue "SÍ", solicita el permiso CALL_PHONE y procede a la llamada de emergencia y el mensaje de despedida.
+
+Si todas son "NO", muestra el mensaje de chequeo de rutina y el mensaje de despedida.
+
+Pasos a Seguir en Android Studio:
+
+Crea la estructura de carpetas com.produvisa.emergencias, com.produvisa.emergencias.models, y com.produvisa.emergencias.api.
+
+Copia los archivos Java y XML a sus ubicaciones correspondientes.
+
+Añade las dependencias en build.gradle (app) para Retrofit y Gson:
+
+
+// Dentro de dependencies { ... }
+implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+4.  Asegúrate de que tu API de Visual Studio esté corriendo en **HTTPS** en el puerto `44338` (o el puerto que uses) antes de ejecutar la aplicación Android.
+
+
+/************************************/
+AMBIENTE DE DESARROLLO
+Configurar http en .NET
+Propiedades del proyecto:
+Project Url:http://localhost:5000/ [Create Virtual Directory]
+
+
+En proyecto Android Studio

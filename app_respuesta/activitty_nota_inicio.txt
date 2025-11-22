@@ -1,0 +1,23 @@
+Esa es una excelente pregunta y toca uno de los aspectos fundamentales de cualquier aplicación Android.
+
+En Android, no se le indica el arranque a un solo archivo, sino a una **Actividad** específica, la cual está declarada en el archivo de configuración principal de la aplicación: el `AndroidManifest.xml`.
+
+La actividad que actúa como la puerta de entrada inicial o la pantalla de inicio de la aplicación es la que tiene una etiqueta especial dentro del manifiesto.
+
+En la solución que te proporcioné, la actividad principal es **`BienvenidaActivity.java`**.
+
+Aquí te muestro cómo se le indica al sistema Android que **`BienvenidaActivity`** debe ser la actividad de inicio:
+
+Generaré el fragmento del archivo `AndroidManifest.xml` de nuevo, destacando la clave:
+
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+### La Clave del Arranque
+
+La combinación de estas dos etiquetas dentro del bloque `<intent-filter>` de la actividad `BienvenidaActivity` es lo que la convierte en la **Actividad de Lanzamiento** (el equivalente a la `MainActivity` tradicional):
+
+1.  **`<action android:name="android.intent.action.MAIN" />`**: Le dice al sistema Android que esta actividad es el punto de partida que se debe invocar.
+2.  **`<category android:name="android.intent.category.LAUNCHER" />`**: Indica que esta actividad debe ser listada por el lanzador (launcher) del sistema operativo, permitiendo que el usuario toque el ícono de la aplicación para iniciarla.
+
+Por lo tanto, la `MainActivity` de tu aplicación de Emergencias es **`BienvenidaActivity`**.

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- IDs de marcador de posición (placeholder) utilizados para tags -->
+
+    <!-- NUEVO: Clave faltante para identificar al trabajador en el RadioButton -->
+    <item name="tag_es_trabajador" type="id" />
+
+    <!-- Claves existentes -->
+    <item name="tag_trabajador_id" type="id" />
+    <item name="tag_familiar_id" type="id" />
+</resources>

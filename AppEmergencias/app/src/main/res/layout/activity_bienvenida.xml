@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="32dp"
+    android:gravity="center"
+    android:background="#E1F5FE"
+    tools:context=".BienvenidaActivity">
+
+    <!-- Título de la Aplicación -->
+    <TextView
+        android:id="@+id/textViewTitulo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Aplicación de Emergencias de PRODUVISA"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#01579B"
+        android:gravity="center"
+        android:layout_marginBottom="40dp" />
+
+    <!-- Solicitud de Cédula -->
+    <TextView
+        android:id="@+id/textViewSolicitud"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Por favor, ingrese su número de cédula de identidad:"
+        android:textSize="16sp"
+        android:textColor="#424242"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Campo de Entrada de Cédula -->
+    <EditText
+        android:id="@+id/editTextCedula"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="V12345678"
+        android:inputType="textCapCharacters"
+        android:maxLength="10"
+        android:padding="12dp"
+        android:background="@drawable/rounded_edittext"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Botón ENVIAR -->
+    <Button
+        android:id="@+id/buttonEnviarCedula"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ENVIAR"
+        android:textSize="18sp"
+        android:paddingStart="40dp"
+        android:paddingEnd="40dp"
+        android:backgroundTint="#00BCD4"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

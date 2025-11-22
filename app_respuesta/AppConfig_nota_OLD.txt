@@ -1,0 +1,17 @@
+El archivo `AppConfig.java` se declara y se ubica siguiendo la **estructura de paquetes** de Java/Android.
+
+Basándonos en la declaración del paquete dentro del archivo:
+
+```java
+package com.produvisa.emergencias;
+
+// ... contenido de la clase ...
+
+
+```
+
+La ruta típica donde debes colocar este archivo dentro de tu proyecto de Android Studio es:
+
+`app/src/main/java/com/produvisa/emergencias/AppConfig.java`
+
+Es decir, se encuentra directamente dentro de la carpeta raíz de tu paquete principal (`com.produvisa.emergencias`), al mismo nivel que las clases `BienvenidaActivity.java`, `SeleccionActivity.java` y `CuestionarioActivity.java`.

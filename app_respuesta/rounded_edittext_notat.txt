@@ -1,0 +1,50 @@
+Este es un error de compilación muy común en Android Studio, y la causa es clara: **tu archivo de *layout* está haciendo referencia a un recurso que no existe en la carpeta correcta.**
+
+Aquí te explico la causa específica y te doy la solución inmediata.
+
+-----
+
+## 🛑 Análisis del Error
+
+**El Error:**
+
+```
+AAPT: error: resource drawable/rounded_edittext (aka com.produvisa.emergencias:drawable/rounded_edittext) not found.
+```
+
+**La Causa:**
+
+En tu archivo de *layout* `activity_bienvenida.xml`, líneas 40-45, se está intentando usar un archivo XML llamado `rounded_edittext` como fondo para el campo de texto de la cédula:
+
+```xml
+<!-- fragmento de activity_bienvenida.xml -->
+<EditText
+    android:id="@+id/editTextCedula"
+    ...
+    android:background="@drawable/rounded_edittext" <-- ¡Aquí está el problema!
+    ... />
+```
+
+El error `resource drawable/rounded_edittext not found` significa que el compilador (**AAPT**) no pudo encontrar un archivo llamado **`rounded_edittext.xml`** dentro de la carpeta **`res/drawable/`** de tu proyecto.
+
+-----
+
+## ✅ Recomendación y Solución
+
+La solución es crear el archivo XML que define ese fondo con bordes redondeados y guardarlo en la ubicación correcta.
+
+### 1\. Creación del Archivo Drawable
+
+Debes crear un archivo nuevo que defina la forma y los bordes redondeados para el `EditText`.
+
+Generaré el archivo que necesitas.
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+### 2\. Ubicación del Archivo
+
+**Paso Crucial:** Debes guardar este código en la siguiente ruta dentro de tu proyecto de Android Studio:
+
+`app/src/main/res/drawable/rounded_edittext.xml`
+
+Una vez que el archivo esté en esa ubicación, el compilador podrá resolver la referencia `@drawable/rounded_edittext` en tu `activity_bienvenida.xml` y la aplicación debería compilar correctamente.

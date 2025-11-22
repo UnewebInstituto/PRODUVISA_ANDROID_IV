@@ -1,0 +1,6 @@
+{
+    "Id": 5,
+    "TrabajadorId": 2,
+    "FamiliarId": 6,
+    "FechaHora": "11/17/2025 5:43:49 PM"
+}

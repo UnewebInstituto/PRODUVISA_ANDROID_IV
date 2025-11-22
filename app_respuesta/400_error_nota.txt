@@ -1,0 +1,214 @@
+¡Excelente, el Logcat te ha dado la información clave para resolver el problema!
+
+El error no es de tu código de Android ni de tu API de .NET, sino de la **configuración de red** y el **puerto** al que intentas conectarte.
+
+El mensaje:
+`Fallo de conexión: failed to connect to /10.0.2.2 (port 52753) ... SocketTimeoutException`
+
+Significa:
+
+1.  **IP Correcta:** La dirección `10.0.2.2` es **correcta**. Es la IP especial que usa el emulador de Android para acceder al `localhost` (tu computadora) donde corre tu API de .NET.
+2.  **Problema de Puerto Dinámico:** El error indica que intentaste conectarte al puerto **`52753`**. Este puerto es **dinámico** y Visual Studio se lo asigna a tu proyecto de API, cambiando cada vez que reinicias la aplicación. Tu aplicación de Android tiene una URL fija, y por eso falló la conexión.
+3.  **`SocketTimeoutException`:** Esto confirma que tu aplicación intentó conectarse, esperó los 15 segundos (`15000ms`), y no recibió respuesta, porque la API no está escuchando en ese puerto específico.
+
+---
+
+## 1. Solución: Fijar el Puerto en AppConfig.java
+
+Necesitas asegurarte de que la URL base en Android Studio apunte a un puerto **fijo y predecible** que esté utilizando tu API.
+
+Generalmente, para el desarrollo de APIs HTTP en .NET se utiliza el puerto **`5000`** (o `5001` para HTTPS, pero usemos HTTP por simplicidad).
+
+Voy a generar el archivo **`AppConfig.java`** que se menciona en la `BienvenidaActivity.java`, usando el puerto estándar `5000`.
+
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+### Pasos a seguir en Visual Studio (API .NET):
+
+1.  **Asegúrate de que tu API de .NET esté configurada para escuchar en el puerto `5000` (o el que elijas):**
+    * En Visual Studio, busca el archivo `launchSettings.json` dentro de la carpeta `Properties` de tu proyecto de API.
+    * Verifica que la URL de `http` o `applicationUrl` tenga el puerto `5000` (o usa el puerto que definas en `AppConfig.java`).
+
+---
+
+## 2. Verificación de Permisos de Red (Cleartext)
+
+Desde Android 9 (API 28), las aplicaciones bloquean por defecto el tráfico no seguro (HTTP, conocido como *cleartext*). Como estamos usando `http://10.0.2.2:5000/`, debemos permitir explícitamente este tráfico en el archivo **`AndroidManifest.xml`**.
+
+Si no tienes estas líneas, la aplicación fallará incluso con el puerto correcto.
+
+
+http://googleusercontent.com/immersive_entry_chip/1
+
+### Resumen de la Solución:
+
+1.  Asegúrate de que el archivo **`AppConfig.java`** exista y contenga la URL fija con el puerto `5000` (o el que uses) y la IP `10.0.2.2`.
+2.  Asegúrate de que tu **`AndroidManifest.xml`** contenga la línea `android:usesCleartextTraffic="true"` y el permiso de `INTERNET`.
+3.  **Ejecuta tu API de .NET** en Visual Studio.
+4.  **Ejecuta la aplicación de Android**. Ahora debería conectarse correctamente.
+
+Si sigues viendo errores después de estos pasos, el problema es el puerto, y debes **verificar cuál es el puerto HTTP real** que tu API de .NET está usando en tu máquina.
+
+
+HABILITACIÓN DE PERMISOS EN EL FIREWALL
+***************************************
+
+Esto es la **evidencia crítica** que necesitábamos. ¡Gracias!
+
+La prueba con el navegador nos da el diagnóstico definitivo.
+
+### I. Análisis de las Pruebas
+
+1.  **Navegador, `localhost:5000/...` (Imagen de la prueba funcional):**
+    * **URL:** `http://localhost:5000/api/Emergencias/Trabajador/V12345678`
+    * **Resultado:** **FUNCIONA** (Devuelve los datos JSON del trabajador).
+    * **Conclusión:** Su API está corriendo en el puerto **5000** y la ruta de *routing* completa (`api/Emergencias/Trabajador/{cedula}`) es **CORRECTA**.
+
+2.  **Navegador, `10.0.2.2:5000/...` (Imagen de la prueba fallida):**
+    * **URL:** `http://10.0.2.2:5000/api/Emergencias/Trabajador/V12345678`
+    * **Resultado:** `ERR_CONNECTION_TIMED_OUT` (Tiempos de espera agotados).
+    * **Conclusión:** La conexión **NO logra establecerse** desde el exterior de su máquina hacia esa IP y puerto.
+
+3.  **App Android (Logcat):**
+    * **URL:** `http://10.0.2.2:5000/api/Emergencias/Trabajador/V12345678`
+    * **Resultado:** Anteriormente veíamos `Error 400` y ahora vemos el *timeout* en el navegador. (El error 400 pudo ser transitorio si el servidor se reinició o si Retrofit manejó el *timeout* de forma diferente).
+
+### II. El Problema: El Cortafuegos (Firewall)
+
+El hecho de que la URL funcione con `localhost` pero no con `10.0.2.2` (que el emulador usa para acceder a `localhost`) confirma que el servidor de su API está activo, pero está **bloqueado a nivel de red externa**.
+
+Cuando ejecuta el proyecto .NET/IIS Express, por defecto, solo escucha en `localhost` por seguridad. El emulador de Android es una máquina virtual externa y necesita acceder a su IP real (o `10.0.2.2`) a través del puerto configurado (5000).
+
+**La causa es casi seguro el Cortafuegos de Windows.**
+
+
+### III. Solución: Abrir el Puerto 5000 en el Firewall
+
+Necesita crear una **regla de entrada** en el Firewall de Windows para permitir que las conexiones externas (como la del emulador de Android) accedan al puerto **5000** (que es el que está usando su API).
+
+Aquí están los pasos detallados:
+
+1.  **Abrir el Firewall:**
+    * Busque en el menú de Windows: **"Firewall de Windows con seguridad avanzada"** (o "Windows Defender Firewall").
+
+2.  **Crear Nueva Regla de Entrada:**
+    * En el panel de la izquierda, haga clic en **"Reglas de entrada"**.
+    * En el panel de la derecha, haga clic en **"Nueva regla..."**.
+
+3.  **Configurar la Regla (Asistente):**
+    * **Tipo de Regla:** Seleccione **"Puerto"** y haga clic en Siguiente.
+    * **Protocolo y Puertos:**
+        * Seleccione **"TCP"**.
+        * Seleccione **"Puertos locales específicos"**.
+        * Ingrese el puerto de su API: **`5000`**. Haga clic en Siguiente.
+    * **Acción:** Seleccione **"Permitir la conexión"** y haga clic en Siguiente.
+    * **Perfil:** Asegúrese de que las opciones **"Dominio"**, **"Privado"** y **"Público"** estén marcadas (especialmente **Privado** y **Público**). Haga clic en Siguiente.
+    * **Nombre:** Ponga un nombre descriptivo, por ejemplo: **`API_Emergencias_5000`**. Haga clic en Finalizar.
+
+Una vez que haya creado y habilitado esta regla, el emulador de Android debería poder establecer la conexión TCP con `10.0.2.2:5000`.
+
+**Prueba Final:**
+
+1.  **Ejecute su proyecto `ApiEmergencias` en Visual Studio.**
+2.  **Ejecute la aplicación Android Studio.**
+3.  **Ingrese la cédula y presione ENVIAR.**
+
+Si esto no funciona, también debe verificar que su servidor web (IIS Express) esté configurado para escuchar en la IP externa (lo cual se hace con comandos de `netsh`, pero **es más complejo y el Firewall es la causa más común**). Comience con el Firewall, que es el paso más importante en el desarrollo local.
+
+*********************
+PROCEDIMIENTO
+*********************
+¡Sí, está exactamente en la ventana correcta! Esa es la pantalla principal del **Firewall de Windows Defender con Seguridad Avanzada**.
+
+Para solucionar el problema de conexión del emulador (`10.0.2.2`) con su API, debe crear una regla que abra el puerto **5000**.
+
+Siga estos pasos desde la pantalla donde se encuentra:
+
+1.  **Diríjase a la Configuración Avanzada:**
+    En el panel de la izquierda, haga clic en **"Configuración avanzada"** (o "Advanced settings").
+
+2.  **Acceda a Reglas de Entrada:**
+    En el nuevo panel que se abrirá, haga clic en **"Reglas de entrada"** (o "Inbound Rules").
+
+3.  **Cree una Nueva Regla:**
+    En el panel de la derecha, haga clic en **"Nueva regla..."** (o "New Rule...").
+
+Esto iniciará el Asistente de Nueva Regla de Entrada. A partir de ahí, siga las instrucciones que le di anteriormente para crear la regla para el puerto **5000**:
+
+* **Tipo de Regla:** Puerto
+* **Protocolo y Puertos:** TCP, Puerto local específico: `5000`
+* **Acción:** Permitir la conexión
+* **Perfil:** Marque todos (Dominio, Privado, Público)
+* **Nombre:** API_Emergencias_5000
+
+Si tiene alguna dificultad en algún paso del asistente, por favor avíseme.
+
+
+/********************************/
+VERIFICACIÓN POSTERIOR
+/********************************/
+Esa es una excelente pregunta. La buena noticia es que **generalmente no se requiere un paso de activación adicional** después de crear la regla en el Firewall de Windows Defender con Seguridad Avanzada.
+
+Aquí está el resumen de lo que sucede y por qué:
+
+### Lo que sucede automáticamente:
+
+1.  **Activación Inmediata:** Una vez que usted termina el asistente de "Nueva Regla de Entrada" y hace clic en **"Finalizar"**, la regla se aplica y está activa de inmediato. No hay un botón de "Guardar" o "Activar" separado.
+2.  **Estado "Enabled" (Activada):** Si vuelve a la lista de "Reglas de entrada", verá su nueva regla listada, y en la columna "Enabled" o "Activada", debería aparecer como **"Sí"**. Si accidentalmente aparece como "No", puede hacer clic derecho sobre la regla y seleccionar "Enable Rule" (Activar Regla).
+3.  **No se Requiere Reinicio:** No necesita reiniciar Windows, ni Android Studio, ni su API de Visual Studio.
+
+### El Único Paso de Activación Requerido
+
+Aunque la regla está activa inmediatamente, hay un paso que **DEBE** hacer para que el cambio de red se refleje, y este es en su **servidor web (la API)**:
+
+| Acción | Razón |
+| :--- | :--- |
+| **Reiniciar la Aplicación .NET** | Cuando crea una nueva regla de Firewall, el servidor web (IIS Express) necesita "darse cuenta" de que un nuevo permiso ha sido concedido para el puerto **5000**. La forma más fácil de forzar esto es **Detener la ejecución de la API en Visual Studio** (el botón Stop o Shift+F5) y luego **volver a Iniciar la ejecución** (el botón Play o F5). |
+
+### Pasos de Verificación Finales
+
+Para estar completamente seguro de que la conexión funcione, realice estas dos pruebas:
+
+1.  **Prueba de Conexión en la Máquina (Simulando el Emulador):**
+    * Abra su navegador web (Chrome, Edge).
+    * Intente acceder a la URL, pero usando la IP que usa el emulador para referirse a su máquina:
+        `http://10.0.2.2:5000/api/Emergencias/Trabajador/V12345678`
+    * **Resultado Esperado:** Si el Firewall funciona correctamente, ahora **DEBERÍA ver los datos JSON** del trabajador que vio con `localhost`. Si sigue viendo el error de *timeout*, la regla no se aplicó o está mal configurada (o su PC tiene un firewall de terceros activo).
+
+2.  **Prueba Final en Android Studio:**
+    * Si la Prueba 1 funciona, compile y ejecute su aplicación Android.
+    * Ingrese el número de cédula.
+    * **Resultado Esperado:** ¡La conexión debería ser exitosa y la aplicación debería avanzar al siguiente `Activity`!
+
+    /*************************************/
+
+    Este error (`java.net.ProtocolException: unexpected end of stream`) es un problema de conectividad muy específico que ocurre a nivel de la capa HTTP (OkHttp/Retrofit) y es muy común cuando se trabaja con servidores de desarrollo local (como IIS Express o Kestrel) en un emulador Android.
+
+### Causa del Error
+
+El error se produce porque el cliente (OkHttp, usado por Retrofit) intenta leer una respuesta que el servidor ha prometido enviar, pero **el servidor cierra la conexión HTTP prematuramente** antes de que la respuesta completa haya sido recibida. Esto es un fallo en el protocolo, a menudo causado por problemas de `Keep-Alive` o de *thread pooling* en el servidor local.
+
+### La Solución: Forzar el Cierre de la Conexión
+
+La forma más robusta de solucionar esto en el lado del cliente (Android) es **obligar a Retrofit/OkHttp a cerrar la conexión** después de cada solicitud, impidiendo que intente reutilizar una conexión que ya está medio muerta.
+
+Esto se logra añadiendo un **Interceptor** que inyecta el encabezado `Connection: close` en cada solicitud. Además, voy a añadir un **Interceptor de Logging** para que pueda ver exactamente el *request* y el *response* en su Logcat, lo cual será de gran ayuda para cualquier depuración futura.
+
+Por favor, reemplace el contenido de su archivo `RetrofitClient.java` con el siguiente código:
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+**Paso Adicional (Importante):**
+
+Para que el `HttpLoggingInterceptor` funcione, asegúrese de tener la siguiente dependencia en su archivo `build.gradle` (a nivel de módulo):
+
+```gradle
+implementation 'com.squareup.okhttp3:logging-interceptor:4.10.0' // O la versión más reciente
+
+Con estas modificaciones, la conexión entre el emulador y el servidor debería ser mucho más estable. Pruebe a ingresar la cédula de nuevo y revise el Logcat: ahora debería ver el JSON de la respuesta impresa por el *logger* antes de que se procese, confirmando que la conexión está funcionando correctamente.
+```
+// DEPENDENCIA
+implementation 'com.squareup.okhttp3:logging-interceptor:4.10.0' // O la versión más reciente
+
+Con estas modificaciones, la conexión entre el emulador y el servidor debería ser mucho más estable. Pruebe a ingresar la cédula de nuevo y revise el Logcat: ahora debería ver el JSON de la respuesta impresa por el *logger* antes de que se procese, confirmando que la conexión está funcionando correctamente.

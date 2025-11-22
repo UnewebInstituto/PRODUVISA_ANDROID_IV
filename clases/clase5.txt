@@ -1,0 +1,37 @@
+1-) Se debe accder a las propiedades del proyecto en
+Visual Studio y se debe asignar el numero de puerto 
+para el ambiente de desarrollo:
+http://localhost:5000/
+
+get
+http://localhost:5000/api/Emergencias/Trabajador/V12345678
+
+
+Para el ambiente de producción:
+https://localhost:5001/
+
+
+GET
+http://localhost:5000/api/Emergencias/Trabajador/V12345678
+{"Id":1,"Cedula":"V12345678","Nombres":"Carlos","Apellidos":"Pérez","CorreoElectronico":"carlos.perez@example.com","Telefono":"04141234567","Familiares":[{"Id":1,"TrabajadorId":1,"Cedula":"V11111111","Nombres":"Ana","Apellidos":"Pérez"},{"Id":2,"TrabajadorId":1,"Cedula":"V11111112","Nombres":"José","Apellidos":"Pérez"},{"Id":3,"TrabajadorId":1,"Cedula":"V11111113","Nombres":"Lucía","Apellidos":"Pérez"},{"Id":4,"TrabajadorId":1,"Cedula":"V11111114","Nombres":"Miguel","Apellidos":"Pérez"}]}
+
+
+POST <--
+(SE DEBE UTILIZAR LA APLICACIÓN POSTMAN)
+https://www.postman.com/downloads/
+
+http://localhost:5000/api/Emergencias/Incidencia
+
+
+{
+    "TrabajadorId": 2, 
+    "FamiliarId": 6,   
+    "Pregunta1": true, 
+    "Pregunta2": false,
+    "Pregunta3": false,
+    "Pregunta4": false,
+    "Pregunta5": false
+}
+
+
+

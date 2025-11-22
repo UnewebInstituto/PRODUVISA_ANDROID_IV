@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config>
+        <!-- Configuración para confiar en certificados autofirmados solo para el entorno de desarrollo (10.0.2.2 es el alias del host de tu PC) -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Opcional pero a veces necesario si la Opción 1 no funciona (permite tráfico HTTP plano) -->
+    <!-- <base-config cleartextTrafficPermitted="true" /> -->
+</network-security-config>

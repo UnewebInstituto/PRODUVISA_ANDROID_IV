@@ -1,0 +1,13 @@
+#,Pregunta,Tipo de Respuesta,Propósito de Activación
+1,¿Hay un sangrado abundante o incontrolable (hemorragia severa) que ponga en riesgo la vida?,Booleano (Sí/No),Circulación: Alerta máxima por pérdida de volumen sanguíneo (Choque Hipovolémico).
+2,¿La persona ha tenido una convulsión (movimientos incontrolados o pérdida total del conocimiento)?,Booleano (Sí/No),Neurológico: Indica actividad cerebral anormal que puede requerir intervención inmediata.
+3,"¿Sufre de dolor de pecho súbito y opresivo, que se siente como un peso o que se irradia a la mandíbula o el brazo?",Booleano (Sí/No),Cardiaco: Alerta por posible Síndrome Coronario Agudo (infarto).
+4,"¿Muestra signos de una reacción alérgica grave (anafilaxia), como hinchazón rápida de labios/lengua o garganta?",Booleano (Sí/No),Vía Aérea: Riesgo de cierre de la vía aérea por edema (hinchazón).
+5,"¿La persona es incapaz de mover un lado de su cuerpo (brazo, pierna o cara) o tiene el habla súbitamente arrastrada?",Booleano (Sí/No),"Neurológico: Alerta de Accidente Cerebrovascular (ACV/Stroke), donde el tiempo de atención es crítico."
+
+¿Hay un sangrado abundante o incontrolable?
+¿La persona ha tenido una convulsión?
+¿Sufre de dolor de pecho súbito y opresivo?
+¿Muestra signos de una reacción alérgica grave?
+¿La persona es incapaz de mover un lado de su cuerpo?
+

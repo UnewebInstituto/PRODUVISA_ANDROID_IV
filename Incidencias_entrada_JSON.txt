@@ -1,0 +1,9 @@
+{
+    "TrabajadorId": 2,
+    "FamiliarId": 6,
+    "Pregunta1": true,
+    "Pregunta2": false,
+    "Pregunta3": false,
+    "Pregunta4": false,
+    "Pregunta5": false
+}

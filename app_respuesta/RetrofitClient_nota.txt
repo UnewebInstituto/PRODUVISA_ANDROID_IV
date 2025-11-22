@@ -1,0 +1,56 @@
+¡Parece que hemos avanzado muchísimo\! El error actual, `java.net.ProtocolException: unexpected end of stream`, es un excelente signo. Significa que **el problema de red y Firewall está resuelto**, porque:
+
+1.  La conexión TCP se estableció correctamente.
+2.  La solicitud HTTP (`GET http://10.0.2.2:5000/...`) llegó al servidor.
+3.  El servidor (su API) comenzó a enviar una respuesta, pero la conexión se **cortó abruptamente** antes de que Retrofit/OkHttp pudiera leer el mensaje completo.
+
+### I. Diagnóstico del Error: `unexpected end of stream`
+
+Este error no suele ser un problema de código del cliente (Android) ni de *routing*, sino de cómo el servidor (su API .NET) o el entorno de *hosting* (IIS Express) maneja el final de la respuesta.
+
+Las causas más comunes son:
+
+| Causa | Descripción | Cómo Solucionarlo |
+| :--- | :--- | :--- |
+| **1. Servidor Cierra Conexión Temprano (Más Común)** | El servidor termina de enviar el contenido (los bytes JSON) y cierra la conexión, pero no envió los encabezados HTTP de forma completa (como `Content-Length` o `Transfer-Encoding: chunked`), o el cliente intentó leer más allá de lo que el servidor reportó. | **Solución 1:** Agregar configuración a la respuesta del servidor o forzar un tiempo de espera más largo en Android. |
+| **2. Conversión JSON Errónea (Serialización)** | Su API está devolviendo datos, pero la librería de serialización (Newtonsoft.Json o System.Text.Json) encuentra un error al convertir el objeto VB.NET en JSON, forzando un cierre antes de enviar el *stream* completo. | **Solución 2:** Revisar el objeto `Trabajador` y sus relaciones (`Familiares`) para asegurarse de que todo sea serializable. |
+| **3. Falta de Configuración de HTTP en Android** | En algunas versiones recientes de Android, si se usa HTTP (no HTTPS), el sistema operativo bloquea la conexión por defecto. | **Solución 3:** Asegurarse de que el `Network Security Config` esté en su `AndroidManifest.xml`. |
+
+### II. Plan de Acción (De lo más fácil a lo más avanzado)
+
+#### 1\. Solución Rápida: Extender el Tiempo de Espera (Timeout)
+
+A veces, la red local entre el emulador y el PC es un poco lenta para Retrofit y este asume que el *stream* ha terminado antes de tiempo.
+
+Debe configurar un `OkHttpClient` personalizado con tiempos de espera mayores e inyectarlo en Retrofit.
+
+Voy a generar un nuevo archivo `RetrofitClient.java` que gestiona la configuración de Retrofit y el cliente HTTP para que pueda usarlo fácilmente.
+
+http://googleusercontent.com/immersive_entry_chip/0
+
+**Instrucción de uso:**
+
+Debe reemplazar la forma en que inicializa su servicio `EmergenciasService` en su código (probablemente en su `MainActivity` o `SeleccionActivity`) para usar este cliente:
+
+```java
+// Código Anterior (ejemplo, puede variar)
+// EmergenciasService service = Retrofit.Builder() ... .create(EmergenciasService.class);
+
+// Código Nuevo (Usando RetrofitClient.java)
+EmergenciasService service = RetrofitClient.getEmergenciasService(); 
+
+// Luego hacer la llamada
+Call<Trabajador> call = service.getTrabajadorPorCedula(cedula);
+// ... etc.
+
+#### 2. Solución de Protocolo: Network Security Config
+
+Aunque la URL es HTTP (no HTTPS), su dispositivo o emulador podría estar forzando HTTPS y fallando. Debe asegurarse de haber agregado la configuración de seguridad para permitir tráfico HTTP.
+
+Asegúrese de que su archivo **`AndroidManifest.xml`** tenga el atributo `android:usesCleartextTraffic="true"` en la etiqueta `<application>`:
+
+
+http://googleusercontent.com/immersive_entry_chip/1
+
+**Pruebe primero las Soluciones 1 y 2 en Android Studio.** El error `unexpected end of stream` es un fuerte indicador de que el servidor está tardando mucho o cortando la conexión. El `RetrofitClient` debería ayudar a estabilizar esto.
+```

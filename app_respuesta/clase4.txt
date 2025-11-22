@@ -1,0 +1,15 @@
+
+HTTPS: INCLUYE UN CERTIFICADO DE SEGURIDAD
+PUERTO RECOMENDADO: 5001
+
+
+HTTP: AMBIENTE DE DESARROLLO, SIN CERTIFICADO DE SEGURIDAD
+PUERTO RECOMENDADO: 5000
+
+1-) Definición de la clase AppConfig.Java
+2-) Instalación de dependencias del proyecto. En Gradle Scripts.
+implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+3-) Creación de POJO (Plain Object Java ) de los modelos: Trabajadores, Familiares y Indicencias.
+4-) Modificación del archivo AndroidManifest.xml, para dar acceso
+a la llamada de Emergencias e Internet (este ultimo para el intercambio de mensajería con el end point de .NET - servicio)
